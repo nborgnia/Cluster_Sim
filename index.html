@@ -119,9 +119,11 @@
     <label id="lbl-L">L = 30 (61×61)</label>
     <input type="range" id="sl-L" min="10" max="60" step="5" value="30">
   </div>
-  <div class="slider-group">
-    <label id="lbl-speed">Δt/frame: 0.40</label>
-    <input type="range" id="sl-speed" min="1" max="200" step="1" value="20">
+  <div class="slider-group" style="justify-content:center">
+    <label style="color:#a09d96;font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
+      <input type="checkbox" id="cb-rotate" style="accent-color:#888;cursor:pointer">
+      rotation
+    </label>
   </div>
 </div>
 
@@ -143,7 +145,21 @@ let animId = null;
 let paramAlpha = 0;
 let paramP = 0.5;
 let paramL = 30;
-let paramSpeed = 20;
+let paramRotate = false;
+
+// Estimate T_max so the interesting part of the simulation takes ~45 seconds at 60fps.
+// Heuristic: growth ~ t^{1/alpha}, system saturates when mean cluster ~ (2L+1)^2 * p.
+// So T_max ~ ((2L+1)^2 * p)^alpha. Clamp to reasonable range.
+function estimateTmax(alpha, p, L) {
+  const nParticles = (2*L+1)*(2*L+1) * p;
+  // We want to see clusters grow to ~10-20% of system size
+  const targetMass = nParticles * 0.15;
+  // From m ~ t^{1/max(alpha,0.1)}, solve for t: t ~ m^{max(alpha,0.1)}
+  const effAlpha = Math.max(alpha, 0.1);
+  const tmax = Math.pow(targetMass, effAlpha);
+  // Clamp to [5, 500]
+  return Math.max(5, Math.min(500, tmax));
+}
 
 function hslToRgb(h, s, l) {
   const c = (1 - Math.abs(2 * l - 1)) * s;
@@ -261,7 +277,10 @@ function draw() {
 function tick() {
   if (!running) return;
   if (!state || state.clusters.size <= 1) { stop(); return; }
-  const dt = paramSpeed * 0.02;
+
+  // Auto-pace: reach T_max in ~45 seconds (2700 frames at 60fps)
+  const tmax = estimateTmax(state.alpha, paramP, state.L);
+  const dt = tmax / 2700;
   const target = state.time + dt;
   let steps = 0;
   while (state.time < target && state.clusters.size > 1 && steps < 50000) {
@@ -286,6 +305,7 @@ function setDisabled(isRunning) {
   document.getElementById("sl-alpha").disabled = isRunning;
   document.getElementById("sl-p").disabled = isRunning;
   document.getElementById("sl-L").disabled = isRunning;
+  document.getElementById("cb-rotate").disabled = isRunning;
 }
 
 function init() {
@@ -324,10 +344,6 @@ document.getElementById("sl-L").addEventListener("input", e => {
   paramL = parseInt(e.target.value);
   const s = 2*paramL+1;
   document.getElementById("lbl-L").textContent = `L = ${paramL} (${s}×${s})`;
-});
-document.getElementById("sl-speed").addEventListener("input", e => {
-  paramSpeed = parseInt(e.target.value);
-  document.getElementById("lbl-speed").textContent = `Δt/frame: ${(paramSpeed*0.02).toFixed(2)}`;
 });
 
 init();

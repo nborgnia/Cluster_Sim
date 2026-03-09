@@ -4,347 +4,584 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cluster-Cluster Aggregation on ℤ²</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
-    background: #1a1a1e;
-    color: #e8e6e1;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 24px 16px;
+  :root {
+    --bg: #0f0f12; --surface: #1a1a1e; --border: #2a2a30;
+    --text: #d4d0c8; --text-dim: #7a7770; --text-bright: #f0ede6;
+    --accent: #8ba4b8; --accent-dim: #5a7080;
+    --serif: 'Source Serif 4', Georgia, serif;
+    --mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
   }
-  h1 {
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #c4c0b8;
-    margin: 0 0 4px 0;
-  }
-  .subtitle { font-size: 12px; color: #7a7770; margin: 0 0 20px 0; }
-  canvas {
-    border: 1px solid #333;
-    border-radius: 4px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-  }
-  .stats {
-    display: flex;
-    gap: 32px;
-    margin-top: 16px;
-    font-size: 13px;
-    color: #a09d96;
-  }
-  .stats span.val { color: #e8e6e1; font-weight: 600; }
-  .buttons {
-    display: flex;
-    gap: 12px;
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  button {
-    padding: 8px 20px;
-    font-size: 13px;
-    font-family: inherit;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    color: #e8e6e1;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  button:disabled { background: #333 !important; color: #666; cursor: default; }
-  .btn-run { background: #27ae60; }
-  .btn-pause { background: #c0392b; }
-  .btn-other { background: #555; }
-  .sliders {
-    margin-top: 24px;
-    display: flex;
-    gap: 28px;
-    flex-wrap: wrap;
-    justify-content: center;
-    font-size: 12px;
-  }
-  .slider-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-  }
-  .slider-group label { color: #a09d96; font-size: 12px; }
-  input[type="range"] { width: 120px; accent-color: #888; }
-  .footer {
-    font-size: 11px;
-    color: #555;
-    margin-top: 24px;
-    text-align: center;
-    max-width: 400px;
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--serif); background: var(--bg); color: var(--text);
+    line-height: 1.7; font-size: 17px; }
+
+  .container { max-width: 820px; margin: 0 auto; padding: 60px 24px 80px; }
+
+  h1 { font-size: 32px; font-weight: 600; color: var(--text-bright);
+    letter-spacing: -0.01em; margin-bottom: 8px; }
+  .byline { font-size: 14px; color: var(--text-dim); margin-bottom: 48px;
+    font-family: var(--mono); }
+  .byline a { color: var(--accent-dim); text-decoration: none; }
+  .byline a:hover { text-decoration: underline; }
+
+  h2 { font-size: 22px; font-weight: 600; color: var(--text-bright);
+    margin: 48px 0 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  h3 { font-size: 18px; font-weight: 600; color: var(--accent); margin: 32px 0 12px; }
+
+  p { margin-bottom: 16px; }
+  .math { font-family: var(--mono); font-size: 15px; color: var(--accent);
+    background: rgba(139,164,184,0.08); padding: 2px 6px; border-radius: 3px; }
+  .block-math { font-family: var(--mono); font-size: 15px; color: var(--accent);
+    background: rgba(139,164,184,0.06); padding: 16px 24px; border-radius: 6px;
+    margin: 20px 0; text-align: center; line-height: 2; border: 1px solid var(--border); }
+  .conjecture { background: rgba(139,164,184,0.06); border-left: 3px solid var(--accent);
+    padding: 16px 20px; border-radius: 0 6px 6px 0; margin: 24px 0; }
+  .conjecture-title { font-weight: 600; color: var(--accent); font-size: 15px;
+    margin-bottom: 8px; font-family: var(--mono); text-transform: uppercase;
+    letter-spacing: 0.05em; }
+
+  ol { margin: 16px 0 16px 28px; }
+  ol li { margin-bottom: 8px; }
+
+  /* Simulation section */
+  .sim-wrapper { background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 24px; margin: 32px 0; }
+  .sim-canvas-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+  canvas { border: 1px solid var(--border); border-radius: 4px; }
+  .sim-stats { display: flex; gap: 32px; justify-content: center;
+    font-family: var(--mono); font-size: 13px; color: var(--text-dim); margin-bottom: 16px; }
+  .sim-stats .val { color: var(--text-bright); font-weight: 500; }
+  .sim-buttons { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+  .sim-buttons button { padding: 7px 18px; font-size: 13px; font-family: var(--mono);
+    font-weight: 500; color: var(--text-bright); border: none; border-radius: 4px;
+    cursor: pointer; transition: background 0.15s; }
+  .sim-buttons button:disabled { background: #2a2a30 !important; color: #555; cursor: default; }
+  .btn-run { background: #2d6a4f; }  .btn-run:hover { background: #3a8060; }
+  .btn-pause { background: #9b2c2c; } .btn-pause:hover { background: #b33; }
+  .btn-other { background: #3a3a40; } .btn-other:hover { background: #4a4a50; }
+
+  .sim-controls { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+  .ctrl { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .ctrl label { font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.05em; }
+  .ctrl input[type="range"] { width: 100px; accent-color: var(--accent-dim); }
+  .ctrl-row { display: flex; align-items: center; gap: 6px; }
+  .ctrl-row input[type="number"] { width: 52px; background: var(--bg); color: var(--text-bright);
+    border: 1px solid var(--border); border-radius: 3px; padding: 3px 5px;
+    font-family: var(--mono); font-size: 12px; text-align: center; }
+  .ctrl-row input[type="number"]:focus { outline: 1px solid var(--accent-dim); }
+  .pill-group { display: flex; gap: 3px; }
+  .pill { padding: 4px 10px; font-size: 11px; font-family: var(--mono);
+    background: #2a2a30; color: var(--text-dim); border: none; border-radius: 3px;
+    cursor: pointer; transition: all 0.15s; }
+  .pill.active { background: var(--accent-dim); color: var(--text-bright); }
+  .pill:disabled { cursor: default; opacity: 0.5; }
+  .toggle-lbl { font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+    display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .toggle-lbl input { accent-color: var(--accent-dim); cursor: pointer; }
+  .warning { font-family: var(--mono); font-size: 11px; color: #c97; text-align: center;
+    margin-top: 8px; display: none; }
+
+  @media (max-width: 600px) {
+    .container { padding: 32px 16px 60px; }
+    h1 { font-size: 24px; }
+    .sim-controls { gap: 14px; }
   }
 </style>
 </head>
 <body>
+<div class="container">
 
-<div style="text-align:center">
-  <h1>Cluster-Cluster Aggregation</h1>
-  <p class="subtitle">on ℤ² · periodic boundary · rate = m<sup>−α</sup></p>
-</div>
-
-<canvas id="grid" width="700" height="700"></canvas>
-
-<div class="stats">
-  <span>t = <span class="val" id="stat-time">0.00</span></span>
-  <span>clusters: <span class="val" id="stat-clusters">0</span></span>
-</div>
-
-<div class="buttons">
-  <button id="btn-run" class="btn-run">Run</button>
-  <button id="btn-step" class="btn-other">Step</button>
-  <button id="btn-reset" class="btn-other">Reset</button>
-</div>
-
-<div class="sliders">
-  <div class="slider-group">
-    <label id="lbl-alpha">α = 0.0</label>
-    <input type="range" id="sl-alpha" min="0" max="3" step="0.1" value="0">
-  </div>
-  <div class="slider-group">
-    <label id="lbl-p">p = 0.50</label>
-    <input type="range" id="sl-p" min="0.1" max="0.9" step="0.05" value="0.5">
-  </div>
-  <div class="slider-group">
-    <label id="lbl-L">L = 30 (61×61)</label>
-    <input type="range" id="sl-L" min="10" max="60" step="5" value="30">
-  </div>
-  <div class="slider-group" style="justify-content:center">
-    <label style="color:#a09d96;font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
-      <input type="checkbox" id="cb-rotate" style="accent-color:#888;cursor:pointer">
-      rotation
-    </label>
-  </div>
-</div>
-
-<p class="footer">
-  Each cluster moves by simple random walk at rate m<sup>−α</sup>.
-  On collision, clusters merge rigidly. Adjust α, p, and L, then reset to see different regimes.
+<h1>Cluster-Cluster Aggregation on ℤ²</h1>
+<p class="byline">
+  Noam Borgnia · Master's thesis under
+  <a href="https://www.professoren.tum.de/en/berger-noam">Prof. Noam Berger</a>,
+  TU Munich, 2026
 </p>
 
-<script>
-const CANVAS_PX = 700;
-const DIRECTIONS = [[1,0],[-1,0],[0,1],[0,-1]];
+<h2>The Model</h2>
+<p>
+  We study a stochastic aggregation process on the two-dimensional integer lattice.
+  Begin with particles scattered randomly across the grid — each site is independently
+  occupied with probability <span class="math">p</span>. Every particle starts as its
+  own cluster of mass 1.
+</p>
+<p>
+  Clusters evolve in continuous time. Each cluster of mass <span class="math">m</span>
+  carries an independent exponential clock ringing at rate
+  <span class="math">m<sup>−α</sup></span>, where <span class="math">α &gt; 0</span>
+  is a fixed parameter controlling how mobility depends on size. When a cluster's clock
+  rings, it attempts to translate rigidly by one lattice step in a uniformly random direction.
+</p>
+<p>
+  If the proposed move would cause any site of the cluster to overlap with a site belonging
+  to a different cluster, the two clusters <em>merge</em>: edges are drawn between all
+  overlapping site pairs, the two clusters unite at their current positions (neither moves),
+  and the merged cluster receives a new clock at the combined rate. If a move would overlap
+  with multiple clusters, one is chosen uniformly at random. If there is no overlap, the
+  cluster simply translates.
+</p>
+<p>
+  The parameter <span class="math">α</span> is the key control. At
+  <span class="math">α = 0</span>, all clusters move at the same speed regardless of
+  size — aggregation is fast and democratic. As <span class="math">α</span> increases,
+  large clusters become nearly immobile while small ones dart around and get absorbed,
+  producing a qualitatively different growth regime.
+</p>
 
+<h2>Interactive Simulation</h2>
+<p>
+  The simulation below implements the exact continuous-time dynamics via the
+  <em>Gillespie algorithm</em>, described in the next section. Adjust the parameters
+  and press <strong>Run</strong> to watch clusters form.
+</p>
+
+<div class="sim-wrapper">
+  <div class="sim-canvas-wrap"><canvas id="grid" width="700" height="700"></canvas></div>
+  <div class="sim-stats">
+    <span>t = <span class="val" id="stat-time">0.00</span></span>
+    <span>clusters: <span class="val" id="stat-clusters">0</span></span>
+  </div>
+  <div class="sim-buttons">
+    <button id="btn-run" class="btn-run">Run</button>
+    <button id="btn-step" class="btn-other">Step</button>
+    <button id="btn-reset" class="btn-other">Reset</button>
+  </div>
+  <div class="sim-controls">
+    <div class="ctrl">
+      <label>lattice</label>
+      <div class="pill-group">
+        <button class="pill active" id="lat-sq">square</button>
+        <button class="pill" id="lat-hex">hex</button>
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>α</label>
+      <div class="ctrl-row">
+        <input type="range" id="sl-alpha" min="0" max="5" step="0.1" value="0">
+        <input type="number" id="in-alpha" min="0" max="10" step="0.1" value="0">
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>density p</label>
+      <div class="ctrl-row">
+        <input type="range" id="sl-p" min="0.05" max="0.95" step="0.05" value="0.5">
+        <input type="number" id="in-p" min="0.01" max="0.99" step="0.01" value="0.5">
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>half-width L</label>
+      <div class="ctrl-row">
+        <input type="range" id="sl-L" min="10" max="80" step="5" value="30">
+        <input type="number" id="in-L" min="5" max="150" step="1" value="30">
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>speed</label>
+      <div class="pill-group">
+        <button class="pill" id="sp-slow">slow</button>
+        <button class="pill active" id="sp-med">med</button>
+        <button class="pill" id="sp-fast">fast</button>
+      </div>
+    </div>
+    <div class="ctrl">
+      <label class="toggle-lbl">
+        <input type="checkbox" id="cb-rotate"> rotation
+      </label>
+    </div>
+  </div>
+  <div class="warning" id="warn-L">⚠ L &gt; 60 may run slowly in the browser.</div>
+</div>
+
+<h2>The Gillespie Algorithm</h2>
+<p>
+  The simulation is an exact implementation of the continuous-time Markov chain governing
+  the cluster dynamics. Rather than ticking a global clock and checking whether each
+  cluster acts, the <em>Gillespie algorithm</em> exploits the memoryless property of
+  exponential distributions to jump directly from one event to the next.
+</p>
+<p>
+  At any moment, each cluster <span class="math">i</span> of mass
+  <span class="math">m<sub>i</sub></span> has an independent exponential clock at rate
+  <span class="math">m<sub>i</sub><sup>−α</sup></span>. By superposition, the next event
+  across all clusters occurs at rate
+  <span class="math">R = Σ m<sub>i</sub><sup>−α</sup></span>, and the waiting time to
+  that event is <span class="math">Exp(R)</span>. Conditioning on an event occurring, the
+  probability that it was triggered by cluster <span class="math">i</span> is
+  <span class="math">m<sub>i</sub><sup>−α</sup> / R</span>.
+</p>
+<p>Each step of the algorithm therefore proceeds as follows:</p>
+<ol>
+  <li>Compute the total rate <span class="math">R = Σ m<sub>i</sub><sup>−α</sup></span> over all clusters.</li>
+  <li>Advance time by <span class="math">Δt ~ Exp(R)</span>.</li>
+  <li>Select the active cluster <span class="math">A</span> with probability proportional to its rate.</li>
+  <li>Choose a uniformly random lattice direction and attempt the move-or-merge step.</li>
+</ol>
+<p>
+  This is exact: each run produces a valid sample path of the continuous-time process.
+  The efficiency comes from collapsing all individual clocks into a single Poisson process,
+  avoiding the need to track residual waiting times.
+</p>
+
+<h2>Conjectures and Results</h2>
+
+<h3>Growth rate</h3>
+<p>
+  Simulations across a range of <span class="math">α</span> values reveal that the mean
+  cluster size at the origin grows as a power law in time:
+</p>
+<div class="block-math">
+  𝔼[|C₀(t)|] ~ t<sup>β</sup>, &nbsp; where &nbsp; β ≈ 1/α.
+</div>
+<p>
+  This can be explained by a mean-field heuristic. A cluster of mass
+  <span class="math">m</span> moves at rate <span class="math">m<sup>−α</sup></span>
+  and has a boundary of size <span class="math">O(m<sup>γ</sup>)</span>, where
+  <span class="math">γ</span> is the perimeter exponent. Accounting for the density
+  of surrounding clusters via mass conservation, the growth equation yields
+  <span class="math">β = 1/(1 + α − γ)</span>.
+</p>
+<p>
+  The observed scaling <span class="math">β ≈ 1/α</span> implies
+  <span class="math">γ ≈ 1</span>: nearly every site in a cluster lies on its boundary.
+  This total ramification is physically plausible — clusters form by random collision and
+  stick rigidly without rearrangement, producing highly branched, tree-like structures
+  analogous to those observed in two-dimensional diffusion-limited cluster aggregation
+  (DLCA), where fractal dimensions of 1.4–1.5 are typical.
+</p>
+
+<div class="conjecture">
+  <div class="conjecture-title">Conjecture 1 — Growth rate</div>
+  For all α &gt; 0, &nbsp; 𝔼[|C₀(t)|] ~ t<sup>1/α</sup> &nbsp; as t → ∞.
+</div>
+
+<h3>Tail decay</h3>
+<p>
+  It was originally conjectured that the distribution of the origin's cluster size exhibits
+  a phase transition at <span class="math">α = 1</span>: power-law tails for
+  <span class="math">α &lt; 1</span> and exponential tails for
+  <span class="math">α &gt; 1</span>.
+</p>
+<p>
+  Simulations do not support this. Instead, exponential fits outperform power-law fits
+  for <em>all</em> tested values of <span class="math">α</span>, including well below 1.
+  The fitted exponential rate <span class="math">c(α)</span> increases monotonically
+  with <span class="math">α</span> and approaches zero as
+  <span class="math">α → 0</span>, with no discontinuity near
+  <span class="math">α = 1</span>.
+</p>
+<p>
+  For small <span class="math">α</span>, the rate <span class="math">c</span> is so small
+  that the exponential tail is indistinguishable from a power law over any finite range —
+  explaining why the original conjecture seemed plausible.
+</p>
+
+<div class="conjecture">
+  <div class="conjecture-title">Conjecture 2 — Tail decay (revised)</div>
+  For all α &gt; 0 and t &gt; 0, &nbsp;
+  ℙ(|C₀| ≥ n) ~ e<sup>−c(α,t) n</sup> &nbsp; as n → ∞, &nbsp;
+  where c(α,t) &gt; 0 for all α &gt; 0 and c → 0 as α → 0.
+</div>
+
+<h3>Open questions</h3>
+<p>
+  Several directions remain. The cluster ramification conjecture
+  (<span class="math">γ = 1</span>) can be tested directly by measuring the
+  perimeter-to-mass ratio in simulations. The functional form of
+  <span class="math">c(α)</span> near zero — whether it vanishes as a power,
+  stretched exponential, or faster — is an important open problem that would
+  clarify the relationship between cluster mobility and tail behavior.
+</p>
+
+<h2>About</h2>
+<p>
+  This work is part of a Master's thesis at
+  <a href="https://www.tum.de/" style="color:var(--accent-dim)">Technical University of Munich</a>
+  under the supervision of
+  <a href="https://www.professoren.tum.de/en/berger-noam" style="color:var(--accent-dim)">Prof. Noam Berger</a>,
+  studying models at the intersection of probability theory, statistical mechanics, and
+  stochastic geometry.
+</p>
+
+</div><!-- /container -->
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// SIMULATION ENGINE
+// ══════════════════════════════════════════════════════════════
+const CANVAS_PX = 700;
 const canvas = document.getElementById("grid");
 const ctx = canvas.getContext("2d");
 
-let state = null;
-let running = false;
-let animId = null;
-let paramAlpha = 0;
-let paramP = 0.5;
-let paramL = 30;
-let paramRotate = false;
+let state=null, running=false, animId=null;
+let paramAlpha=0, paramP=0.5, paramL=30;
+let paramRotate=false, targetSeconds=30, latticeType="square";
 
-// Estimate T_max so the interesting part of the simulation takes ~45 seconds at 60fps.
-// Heuristic: growth ~ t^{1/alpha}, system saturates when mean cluster ~ (2L+1)^2 * p.
-// So T_max ~ ((2L+1)^2 * p)^alpha. Clamp to reasonable range.
-function estimateTmax(alpha, p, L) {
-  const nParticles = (2*L+1)*(2*L+1) * p;
-  // We want to see clusters grow to ~10-20% of system size
-  const targetMass = nParticles * 0.15;
-  // From m ~ t^{1/max(alpha,0.1)}, solve for t: t ~ m^{max(alpha,0.1)}
-  const effAlpha = Math.max(alpha, 0.1);
-  const tmax = Math.pow(targetMass, effAlpha);
-  // Clamp to [5, 500]
-  return Math.max(5, Math.min(500, tmax));
-}
-
-function hslToRgb(h, s, l) {
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-  const m = l - c / 2;
-  let r, g, b;
-  if (h < 60) { r=c; g=x; b=0; }
-  else if (h < 120) { r=x; g=c; b=0; }
-  else if (h < 180) { r=0; g=c; b=x; }
-  else if (h < 240) { r=0; g=x; b=c; }
-  else if (h < 300) { r=x; g=0; b=c; }
-  else { r=c; g=0; b=x; }
+// ── Color ──
+function hslToRgb(h,s,l){
+  const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;
+  let r,g,b;
+  if(h<60){r=c;g=x;b=0}else if(h<120){r=x;g=c;b=0}else if(h<180){r=0;g=c;b=x}
+  else if(h<240){r=0;g=x;b=c}else if(h<300){r=x;g=0;b=c}else{r=c;g=0;b=x}
   return `rgb(${Math.round((r+m)*255)},${Math.round((g+m)*255)},${Math.round((b+m)*255)})`;
 }
-
-function idToColor(id) {
-  if (id < 0) return "#f8f7f4";
-  const hue = (id * 137.508) % 360;
-  const sat = 0.55 + (id * 73 % 30) / 100;
-  const lit = 0.42 + (id * 53 % 20) / 100;
-  return hslToRgb(hue, sat, lit);
+function idToColor(id){
+  if(id<0)return"#f8f7f4";
+  return hslToRgb((id*137.508)%360,0.55+(id*73%30)/100,0.42+(id*53%20)/100);
 }
 
-function wrap(x, L) {
-  const S = 2*L+1;
-  return ((x+L)%S+S)%S - L;
+// ── Lattice ──
+const SQ_DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+const HEX_DIRS=[[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]];
+function sqWrap(x,L){const S=2*L+1;return((x+L)%S+S)%S-L;}
+function hexWrap(q,r,L){const S=2*L+1;return{q:((q+L)%S+S)%S-L,r:((r+L)%S+S)%S-L};}
+function siteKey(s,L,type){const S=2*L+1;return type==="hex"?(s.q+L)*S+(s.r+L):(s.x+L)*S+(s.y+L);}
+function getDirs(type){return type==="hex"?HEX_DIRS:SQ_DIRS;}
+function wrapSite(s,L,type){
+  if(type==="hex"){const w=hexWrap(s.q,s.r,L);return{q:w.q,r:w.r};}
+  return{x:sqWrap(s.x,L),y:sqWrap(s.y,L)};
 }
+function moveSite(s,d,L,type){
+  if(type==="hex")return wrapSite({q:s.q+d[0],r:s.r+d[1]},L,"hex");
+  return wrapSite({x:s.x+d[0],y:s.y+d[1]},L,"square");
+}
+function getCoord(s,axis){return"q"in s?(axis===0?s.q:s.r):(axis===0?s.x:s.y);}
 
-function createState(p, alpha, L) {
-  const S = 2*L+1;
-  const grid = new Int32Array(S*S).fill(-1);
-  const clusters = new Map();
-  let nextId = 0;
-  for (let x = -L; x <= L; x++) {
-    for (let y = -L; y <= L; y++) {
-      if (Math.random() < p) {
-        grid[(x+L)*S+(y+L)] = nextId;
-        clusters.set(nextId, [{x,y}]);
-        nextId++;
-      }
+// ── State ──
+function createState(p,alpha,L,type){
+  const S=2*L+1,grid=new Int32Array(S*S).fill(-1),clusters=new Map();
+  let nextId=0;
+  for(let a=-L;a<=L;a++)for(let b=-L;b<=L;b++){
+    if(Math.random()<p){
+      const site=type==="hex"?{q:a,r:b}:{x:a,y:b};
+      grid[siteKey(site,L,type)]=nextId;clusters.set(nextId,[site]);nextId++;
     }
   }
-  return { grid, clusters, time:0, alpha, L, nextId };
+  return{grid,clusters,time:0,alpha,L,type,nextId};
 }
 
-function step(st) {
-  const { grid, clusters, alpha, L } = st;
-  const S = 2*L+1;
-  if (clusters.size <= 1) return;
+// ── Rotation ──
+function sqRotate(d0,d1,sign){return{d0:-d1*sign,d1:d0*sign};}
+function hexRotate(d0,d1,sign){return sign>0?{d0:-d1,d1:d0+d1}:{d0:d0+d1,d1:-d0};}
 
-  const cids = Array.from(clusters.keys());
-  const masses = cids.map(c => clusters.get(c).length);
-  const rates = masses.map(m => Math.pow(m, -alpha));
-  const totalRate = rates.reduce((a,b) => a+b, 0);
+// ── Step ──
+function step(st){
+  const{grid,clusters,alpha,L,type}=st;
+  const S=2*L+1,dirs=getDirs(type);
+  if(clusters.size<=1)return;
+  const cids=Array.from(clusters.keys());
+  const masses=cids.map(c=>clusters.get(c).length);
+  const rates=masses.map(m=>Math.pow(m,-alpha));
+  const totalRate=rates.reduce((a,b)=>a+b,0);
+  st.time+=-Math.log(Math.random())/totalRate;
+  let r=Math.random()*totalRate,chosen=0;
+  for(let i=0;i<rates.length;i++){r-=rates[i];if(r<=0){chosen=i;break;}}
+  const cidA=cids[chosen],sitesA=clusters.get(cidA);
+  const doRotate=paramRotate&&sitesA.length>1&&Math.random()<0.5;
+  let proposedSites,isRotation=false;
 
-  st.time += -Math.log(Math.random()) / totalRate;
-
-  let r = Math.random() * totalRate;
-  let chosen = 0;
-  for (let i = 0; i < rates.length; i++) { r -= rates[i]; if (r <= 0) { chosen = i; break; } }
-  const cidA = cids[chosen];
-  const sitesA = clusters.get(cidA);
-
-  const dir = DIRECTIONS[Math.floor(Math.random()*4)];
-  const dx = dir[0], dy = dir[1];
-
-  const foreign = new Set();
-  for (const s of sitesA) {
-    const nx = wrap(s.x+dx, L), ny = wrap(s.y+dy, L);
-    const other = grid[(nx+L)*S+(ny+L)];
-    if (other >= 0 && other !== cidA) foreign.add(other);
+  if(doRotate){
+    isRotation=true;
+    const anchor=sitesA[0],a0=getCoord(anchor,0),a1=getCoord(anchor,1);
+    const unwrapped=sitesA.map(s=>{
+      let d0=getCoord(s,0)-a0,d1=getCoord(s,1)-a1;
+      if(d0>L)d0-=S;else if(d0<-L)d0+=S;
+      if(d1>L)d1-=S;else if(d1<-L)d1+=S;
+      return{d0,d1};
+    });
+    let maxOff=0;
+    for(const u of unwrapped)maxOff=Math.max(maxOff,Math.abs(u.d0),Math.abs(u.d1));
+    if(maxOff>L)return;
+    const sign=Math.random()<0.5?1:-1;
+    const rotated=unwrapped.map(u=>{
+      const rv=type==="hex"?hexRotate(u.d0,u.d1,sign):sqRotate(u.d0,u.d1,sign);
+      return{d0:rv.d0,d1:rv.d1};
+    });
+    const seen=new Set();
+    for(const rv of rotated){const k=(rv.d0+500)*1001+(rv.d1+500);if(seen.has(k))return;seen.add(k);}
+    const posSet=new Set(rotated.map(rv=>(rv.d0+500)*1001+(rv.d1+500)));
+    const visited=new Set(),queue=[rotated[0]];
+    visited.add((rotated[0].d0+500)*1001+(rotated[0].d1+500));
+    while(queue.length>0){const cur=queue.pop();for(const d of dirs){
+      const nd0=cur.d0+d[0],nd1=cur.d1+d[1],nk=(nd0+500)*1001+(nd1+500);
+      if(posSet.has(nk)&&!visited.has(nk)){visited.add(nk);queue.push({d0:nd0,d1:nd1});}
+    }}
+    if(visited.size!==rotated.length)return;
+    proposedSites=type==="hex"
+      ?rotated.map(rv=>wrapSite({q:a0+rv.d0,r:a1+rv.d1},L,"hex"))
+      :rotated.map(rv=>wrapSite({x:a0+rv.d0,y:a1+rv.d1},L,"square"));
+  }else{
+    const dir=dirs[Math.floor(Math.random()*dirs.length)];
+    proposedSites=sitesA.map(s=>moveSite(s,dir,L,type));
   }
 
-  if (foreign.size > 0) {
-    const arr = Array.from(foreign);
-    const cidB = arr[Math.floor(Math.random()*arr.length)];
-    const sitesB = clusters.get(cidB);
-    for (const s of sitesB) grid[(s.x+L)*S+(s.y+L)] = cidA;
-    clusters.set(cidA, sitesA.concat(sitesB));
-    clusters.delete(cidB);
-  } else {
-    for (const s of sitesA) grid[(s.x+L)*S+(s.y+L)] = -1;
-    const ns = [];
-    for (const s of sitesA) {
-      const nx = wrap(s.x+dx, L), ny = wrap(s.y+dy, L);
-      ns.push({x:nx, y:ny});
-      grid[(nx+L)*S+(ny+L)] = cidA;
-    }
-    clusters.set(cidA, ns);
+  const foreign=new Set();
+  for(const s of proposedSites){const other=grid[siteKey(s,L,type)];if(other>=0&&other!==cidA)foreign.add(other);}
+
+  if(foreign.size>0){
+    if(isRotation)return;
+    const arr=Array.from(foreign);
+    const cidB=arr[Math.floor(Math.random()*arr.length)];
+    const sitesB=clusters.get(cidB);
+    let keeper,absorbed,keptSites,absorbedSites;
+    if(sitesA.length>=sitesB.length){keeper=cidA;absorbed=cidB;keptSites=sitesA;absorbedSites=sitesB;}
+    else{keeper=cidB;absorbed=cidA;keptSites=sitesB;absorbedSites=sitesA;}
+    for(const s of absorbedSites)grid[siteKey(s,L,type)]=keeper;
+    clusters.set(keeper,keptSites.concat(absorbedSites));clusters.delete(absorbed);
+  }else{
+    for(const s of sitesA)grid[siteKey(s,L,type)]=-1;
+    for(const s of proposedSites)grid[siteKey(s,L,type)]=cidA;
+    clusters.set(cidA,proposedSites);
   }
 }
 
-function draw() {
-  if (!state) return;
-  const S = 2*state.L+1;
-  const cellSize = Math.max(Math.floor(CANVAS_PX/S), 2);
-  const W = S * cellSize;
-  canvas.width = W;
-  canvas.height = W;
-  ctx.fillStyle = "#f8f7f4";
-  ctx.fillRect(0, 0, W, W);
-  for (let xi = 0; xi < S; xi++) {
-    for (let yi = 0; yi < S; yi++) {
-      const id = state.grid[xi*S+yi];
-      if (id >= 0) {
-        ctx.fillStyle = idToColor(id);
-        ctx.fillRect(yi*cellSize, xi*cellSize, cellSize-0.5, cellSize-0.5);
-      }
-    }
+// ── Draw ──
+function drawSquare(){
+  const S=2*state.L+1,cs=Math.max(Math.floor(CANVAS_PX/S),2),W=S*cs;
+  canvas.width=W;canvas.height=W;
+  ctx.fillStyle="#f8f7f4";ctx.fillRect(0,0,W,W);
+  for(let xi=0;xi<S;xi++)for(let yi=0;yi<S;yi++){
+    const id=state.grid[xi*S+yi];
+    if(id>=0){ctx.fillStyle=idToColor(id);ctx.fillRect(yi*cs,xi*cs,cs-0.5,cs-0.5);}
   }
-  document.getElementById("stat-time").textContent = state.time.toFixed(2);
-  document.getElementById("stat-clusters").textContent = state.clusters.size;
+}
+function drawHex(){
+  const L=state.L,S=2*L+1;
+  const sqrt3=Math.sqrt(3);
+  const sizeByW=CANVAS_PX/(sqrt3*(S+1));
+  const sizeByH=CANVAS_PX/(1.5*S+0.5);
+  const size=Math.min(sizeByW,sizeByH)*0.95;
+  const W=CANVAS_PX,H=Math.ceil(1.5*S*size+size);
+  canvas.width=W;canvas.height=H;
+  ctx.fillStyle="#1a1a1e";ctx.fillRect(0,0,W,H);
+  // Draw background rhombus
+  const cx=W/2,cy=H/2;
+  ctx.fillStyle="#f8f7f4";
+  // Corners of the rhombic domain
+  const corners=[[-L,0],[0,-L],[L,0],[0,L]];
+  ctx.beginPath();
+  corners.forEach((c,i)=>{
+    const px=cx+size*sqrt3*(c[0]+c[1]*0.5);
+    const py=cy+size*1.5*c[1];
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  });
+  ctx.closePath();ctx.fill();
+
+  for(let qi=-L;qi<=L;qi++)for(let ri=-L;ri<=L;ri++){
+    const idx=(qi+L)*S+(ri+L);
+    const id=state.grid[idx];
+    const px=cx+size*sqrt3*(qi+ri*0.5);
+    const py=cy+size*1.5*ri;
+    if(id>=0){ctx.fillStyle=idToColor(id);drawHexCell(px,py,size*0.92);}
+  }
+}
+function drawHexCell(cx,cy,size){
+  ctx.beginPath();
+  for(let i=0;i<6;i++){const a=Math.PI/180*(60*i-30);
+    const x=cx+size*Math.cos(a),y=cy+size*Math.sin(a);
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }ctx.closePath();ctx.fill();
+}
+function draw(){
+  if(!state)return;
+  if(state.type==="hex")drawHex();else drawSquare();
+  document.getElementById("stat-time").textContent=state.time.toFixed(2);
+  document.getElementById("stat-clusters").textContent=state.clusters.size;
 }
 
-function tick() {
-  if (!running) return;
-  if (!state || state.clusters.size <= 1) { stop(); return; }
-
-  // Auto-pace: reach T_max in ~45 seconds (2700 frames at 60fps)
-  const tmax = estimateTmax(state.alpha, paramP, state.L);
-  const dt = tmax / 2700;
-  const target = state.time + dt;
-  let steps = 0;
-  while (state.time < target && state.clusters.size > 1 && steps < 50000) {
-    step(state);
-    steps++;
+// ── Pacing ──
+function getStepsPerFrame(){
+  if(!state)return 10;
+  const nCl=state.clusters.size;
+  const nPart=Math.round((2*state.L+1)**2*paramP);
+  const spp=(5+20*(1-paramP))*(1+Math.max(state.alpha,0.1));
+  const tot=nPart*spp,frames=targetSeconds*60;
+  let base=Math.max(1,Math.round(tot/frames));
+  const frac=nCl/Math.max(nPart,1);
+  if(frac>0.5)base=Math.round(base*2);
+  else if(frac>0.1)base=base;
+  else if(frac>0.03)base=Math.max(1,Math.round(base*0.3));
+  else base=Math.max(1,Math.round(base*0.1));
+  if(nCl>1){
+    let mx=0;for(const[,s]of state.clusters)if(s.length>mx)mx=s.length;
+    const mxR=Math.pow(Math.max(mx,1),-state.alpha);
+    const avgM=nPart/nCl,avgR=Math.pow(Math.max(avgM,1),-state.alpha);
+    const totR=nCl*avgR,bigM=base*mxR/Math.max(totR,0.001);
+    if(bigM>3)base=Math.max(1,Math.round(base*3/bigM));
   }
-  draw();
-  animId = requestAnimationFrame(tick);
+  return Math.max(1,Math.min(base,80000));
 }
-
-function stop() {
-  running = false;
-  if (animId) cancelAnimationFrame(animId);
-  animId = null;
-  document.getElementById("btn-run").textContent = "Run";
-  document.getElementById("btn-run").className = "btn-run";
+function tick(){
+  if(!running)return;
+  if(!state||state.clusters.size<=1){stop();return;}
+  const n=getStepsPerFrame();
+  for(let i=0;i<n&&state.clusters.size>1;i++)step(state);
+  draw();animId=requestAnimationFrame(tick);
+}
+function stop(){
+  running=false;if(animId)cancelAnimationFrame(animId);animId=null;
+  document.getElementById("btn-run").textContent="Run";
+  document.getElementById("btn-run").className="btn-run";
   setDisabled(false);
 }
-
-function setDisabled(isRunning) {
-  document.getElementById("btn-step").disabled = isRunning;
-  document.getElementById("sl-alpha").disabled = isRunning;
-  document.getElementById("sl-p").disabled = isRunning;
-  document.getElementById("sl-L").disabled = isRunning;
-  document.getElementById("cb-rotate").disabled = isRunning;
+function setDisabled(r){
+  for(const id of["btn-step","sl-alpha","in-alpha","sl-p","in-p","sl-L","in-L","cb-rotate","lat-sq","lat-hex"])
+    document.getElementById(id).disabled=r;
+}
+function init(){
+  stop();state=createState(paramP,paramAlpha,paramL,latticeType);draw();
+  document.getElementById("warn-L").style.display=paramL>60?"block":"none";
 }
 
-function init() {
-  stop();
-  state = createState(paramP, paramAlpha, paramL);
-  draw();
+// ── Controls ──
+function syncParam(sliderId,inputId,setter,fmt){
+  const sl=document.getElementById(sliderId),inp=document.getElementById(inputId);
+  sl.addEventListener("input",()=>{const v=parseFloat(sl.value);inp.value=fmt(v);setter(v);});
+  inp.addEventListener("change",()=>{
+    let v=parseFloat(inp.value);
+    if(isNaN(v))v=parseFloat(sl.value);
+    v=Math.max(parseFloat(sl.min||inp.min),Math.min(parseFloat(inp.max),v));
+    sl.value=v;inp.value=fmt(v);setter(v);
+  });
 }
+syncParam("sl-alpha","in-alpha",v=>{paramAlpha=v;},v=>v.toFixed(1));
+syncParam("sl-p","in-p",v=>{paramP=v;},v=>v.toFixed(2));
+syncParam("sl-L","in-L",v=>{paramL=Math.round(v);
+  document.getElementById("warn-L").style.display=paramL>60?"block":"none";
+},v=>String(Math.round(v)));
 
-document.getElementById("btn-run").addEventListener("click", () => {
-  if (running) { stop(); } else {
-    running = true;
-    document.getElementById("btn-run").textContent = "Pause";
-    document.getElementById("btn-run").className = "btn-pause";
-    setDisabled(true);
-    animId = requestAnimationFrame(tick);
+function setLattice(type,id){
+  latticeType=type;
+  ["lat-sq","lat-hex"].forEach(x=>document.getElementById(x).classList.remove("active"));
+  document.getElementById(id).classList.add("active");init();
+}
+document.getElementById("lat-sq").addEventListener("click",()=>setLattice("square","lat-sq"));
+document.getElementById("lat-hex").addEventListener("click",()=>setLattice("hex","lat-hex"));
+
+function setSpd(s,id){
+  targetSeconds=s;
+  ["sp-slow","sp-med","sp-fast"].forEach(x=>document.getElementById(x).classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+document.getElementById("sp-slow").addEventListener("click",()=>setSpd(60,"sp-slow"));
+document.getElementById("sp-med").addEventListener("click",()=>setSpd(30,"sp-med"));
+document.getElementById("sp-fast").addEventListener("click",()=>setSpd(15,"sp-fast"));
+
+document.getElementById("btn-run").addEventListener("click",()=>{
+  if(running){stop();}else{
+    running=true;document.getElementById("btn-run").textContent="Pause";
+    document.getElementById("btn-run").className="btn-pause";
+    setDisabled(true);animId=requestAnimationFrame(tick);
   }
 });
-
-document.getElementById("btn-step").addEventListener("click", () => {
-  if (!state || state.clusters.size <= 1) return;
-  step(state);
-  draw();
+document.getElementById("btn-step").addEventListener("click",()=>{
+  if(!state||state.clusters.size<=1)return;step(state);draw();
 });
-
-document.getElementById("btn-reset").addEventListener("click", init);
-
-document.getElementById("sl-alpha").addEventListener("input", e => {
-  paramAlpha = parseFloat(e.target.value);
-  document.getElementById("lbl-alpha").textContent = `α = ${paramAlpha.toFixed(1)}`;
-});
-document.getElementById("sl-p").addEventListener("input", e => {
-  paramP = parseFloat(e.target.value);
-  document.getElementById("lbl-p").textContent = `p = ${paramP.toFixed(2)}`;
-});
-document.getElementById("sl-L").addEventListener("input", e => {
-  paramL = parseInt(e.target.value);
-  const s = 2*paramL+1;
-  document.getElementById("lbl-L").textContent = `L = ${paramL} (${s}×${s})`;
-});
+document.getElementById("btn-reset").addEventListener("click",init);
+document.getElementById("cb-rotate").addEventListener("change",e=>{paramRotate=e.target.checked;});
 
 init();
 </script>

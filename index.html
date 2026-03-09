@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cluster-Cluster Aggregation on ℤ²</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+    background: #1a1a1e;
+    color: #e8e6e1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #c4c0b8;
+    margin: 0 0 4px 0;
+  }
+  .subtitle { font-size: 12px; color: #7a7770; margin: 0 0 20px 0; }
+  canvas {
+    border: 1px solid #333;
+    border-radius: 4px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  .stats {
+    display: flex;
+    gap: 32px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #a09d96;
+  }
+  .stats span.val { color: #e8e6e1; font-weight: 600; }
+  .buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  button {
+    padding: 8px 20px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #e8e6e1;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  button:disabled { background: #333 !important; color: #666; cursor: default; }
+  .btn-run { background: #27ae60; }
+  .btn-pause { background: #c0392b; }
+  .btn-other { background: #555; }
+  .sliders {
+    margin-top: 24px;
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 12px;
+  }
+  .slider-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .slider-group label { color: #a09d96; font-size: 12px; }
+  input[type="range"] { width: 120px; accent-color: #888; }
+  .footer {
+    font-size: 11px;
+    color: #555;
+    margin-top: 24px;
+    text-align: center;
+    max-width: 400px;
+  }
+</style>
+</head>
+<body>
+
+<div style="text-align:center">
+  <h1>Cluster-Cluster Aggregation</h1>
+  <p class="subtitle">on ℤ² · periodic boundary · rate = m<sup>−α</sup></p>
+</div>
+
+<canvas id="grid" width="700" height="700"></canvas>
+
+<div class="stats">
+  <span>t = <span class="val" id="stat-time">0.00</span></span>
+  <span>clusters: <span class="val" id="stat-clusters">0</span></span>
+</div>
+
+<div class="buttons">
+  <button id="btn-run" class="btn-run">Run</button>
+  <button id="btn-step" class="btn-other">Step</button>
+  <button id="btn-reset" class="btn-other">Reset</button>
+</div>
+
+<div class="sliders">
+  <div class="slider-group">
+    <label id="lbl-alpha">α = 0.0</label>
+    <input type="range" id="sl-alpha" min="0" max="3" step="0.1" value="0">
+  </div>
+  <div class="slider-group">
+    <label id="lbl-p">p = 0.50</label>
+    <input type="range" id="sl-p" min="0.1" max="0.9" step="0.05" value="0.5">
+  </div>
+  <div class="slider-group">
+    <label id="lbl-L">L = 30 (61×61)</label>
+    <input type="range" id="sl-L" min="10" max="60" step="5" value="30">
+  </div>
+  <div class="slider-group">
+    <label id="lbl-speed">Δt/frame: 0.40</label>
+    <input type="range" id="sl-speed" min="1" max="200" step="1" value="20">
+  </div>
+</div>
+
+<p class="footer">
+  Each cluster moves by simple random walk at rate m<sup>−α</sup>.
+  On collision, clusters merge rigidly. Adjust α, p, and L, then reset to see different regimes.
+</p>
+
+<script>
+const CANVAS_PX = 700;
+const DIRECTIONS = [[1,0],[-1,0],[0,1],[0,-1]];
+
+const canvas = document.getElementById("grid");
+const ctx = canvas.getContext("2d");
+
+let state = null;
+let running = false;
+let animId = null;
+let paramAlpha = 0;
+let paramP = 0.5;
+let paramL = 30;
+let paramSpeed = 20;
+
+function hslToRgb(h, s, l) {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l - c / 2;
+  let r, g, b;
+  if (h < 60) { r=c; g=x; b=0; }
+  else if (h < 120) { r=x; g=c; b=0; }
+  else if (h < 180) { r=0; g=c; b=x; }
+  else if (h < 240) { r=0; g=x; b=c; }
+  else if (h < 300) { r=x; g=0; b=c; }
+  else { r=c; g=0; b=x; }
+  return `rgb(${Math.round((r+m)*255)},${Math.round((g+m)*255)},${Math.round((b+m)*255)})`;
+}
+
+function idToColor(id) {
+  if (id < 0) return "#f8f7f4";
+  const hue = (id * 137.508) % 360;
+  const sat = 0.55 + (id * 73 % 30) / 100;
+  const lit = 0.42 + (id * 53 % 20) / 100;
+  return hslToRgb(hue, sat, lit);
+}
+
+function wrap(x, L) {
+  const S = 2*L+1;
+  return ((x+L)%S+S)%S - L;
+}
+
+function createState(p, alpha, L) {
+  const S = 2*L+1;
+  const grid = new Int32Array(S*S).fill(-1);
+  const clusters = new Map();
+  let nextId = 0;
+  for (let x = -L; x <= L; x++) {
+    for (let y = -L; y <= L; y++) {
+      if (Math.random() < p) {
+        grid[(x+L)*S+(y+L)] = nextId;
+        clusters.set(nextId, [{x,y}]);
+        nextId++;
+      }
+    }
+  }
+  return { grid, clusters, time:0, alpha, L, nextId };
+}
+
+function step(st) {
+  const { grid, clusters, alpha, L } = st;
+  const S = 2*L+1;
+  if (clusters.size <= 1) return;
+
+  const cids = Array.from(clusters.keys());
+  const masses = cids.map(c => clusters.get(c).length);
+  const rates = masses.map(m => Math.pow(m, -alpha));
+  const totalRate = rates.reduce((a,b) => a+b, 0);
+
+  st.time += -Math.log(Math.random()) / totalRate;
+
+  let r = Math.random() * totalRate;
+  let chosen = 0;
+  for (let i = 0; i < rates.length; i++) { r -= rates[i]; if (r <= 0) { chosen = i; break; } }
+  const cidA = cids[chosen];
+  const sitesA = clusters.get(cidA);
+
+  const dir = DIRECTIONS[Math.floor(Math.random()*4)];
+  const dx = dir[0], dy = dir[1];
+
+  const foreign = new Set();
+  for (const s of sitesA) {
+    const nx = wrap(s.x+dx, L), ny = wrap(s.y+dy, L);
+    const other = grid[(nx+L)*S+(ny+L)];
+    if (other >= 0 && other !== cidA) foreign.add(other);
+  }
+
+  if (foreign.size > 0) {
+    const arr = Array.from(foreign);
+    const cidB = arr[Math.floor(Math.random()*arr.length)];
+    const sitesB = clusters.get(cidB);
+    for (const s of sitesB) grid[(s.x+L)*S+(s.y+L)] = cidA;
+    clusters.set(cidA, sitesA.concat(sitesB));
+    clusters.delete(cidB);
+  } else {
+    for (const s of sitesA) grid[(s.x+L)*S+(s.y+L)] = -1;
+    const ns = [];
+    for (const s of sitesA) {
+      const nx = wrap(s.x+dx, L), ny = wrap(s.y+dy, L);
+      ns.push({x:nx, y:ny});
+      grid[(nx+L)*S+(ny+L)] = cidA;
+    }
+    clusters.set(cidA, ns);
+  }
+}
+
+function draw() {
+  if (!state) return;
+  const S = 2*state.L+1;
+  const cellSize = Math.max(Math.floor(CANVAS_PX/S), 2);
+  const W = S * cellSize;
+  canvas.width = W;
+  canvas.height = W;
+  ctx.fillStyle = "#f8f7f4";
+  ctx.fillRect(0, 0, W, W);
+  for (let xi = 0; xi < S; xi++) {
+    for (let yi = 0; yi < S; yi++) {
+      const id = state.grid[xi*S+yi];
+      if (id >= 0) {
+        ctx.fillStyle = idToColor(id);
+        ctx.fillRect(yi*cellSize, xi*cellSize, cellSize-0.5, cellSize-0.5);
+      }
+    }
+  }
+  document.getElementById("stat-time").textContent = state.time.toFixed(2);
+  document.getElementById("stat-clusters").textContent = state.clusters.size;
+}
+
+function tick() {
+  if (!running) return;
+  if (!state || state.clusters.size <= 1) { stop(); return; }
+  const dt = paramSpeed * 0.02;
+  const target = state.time + dt;
+  let steps = 0;
+  while (state.time < target && state.clusters.size > 1 && steps < 50000) {
+    step(state);
+    steps++;
+  }
+  draw();
+  animId = requestAnimationFrame(tick);
+}
+
+function stop() {
+  running = false;
+  if (animId) cancelAnimationFrame(animId);
+  animId = null;
+  document.getElementById("btn-run").textContent = "Run";
+  document.getElementById("btn-run").className = "btn-run";
+  setDisabled(false);
+}
+
+function setDisabled(isRunning) {
+  document.getElementById("btn-step").disabled = isRunning;
+  document.getElementById("sl-alpha").disabled = isRunning;
+  document.getElementById("sl-p").disabled = isRunning;
+  document.getElementById("sl-L").disabled = isRunning;
+}
+
+function init() {
+  stop();
+  state = createState(paramP, paramAlpha, paramL);
+  draw();
+}
+
+document.getElementById("btn-run").addEventListener("click", () => {
+  if (running) { stop(); } else {
+    running = true;
+    document.getElementById("btn-run").textContent = "Pause";
+    document.getElementById("btn-run").className = "btn-pause";
+    setDisabled(true);
+    animId = requestAnimationFrame(tick);
+  }
+});
+
+document.getElementById("btn-step").addEventListener("click", () => {
+  if (!state || state.clusters.size <= 1) return;
+  step(state);
+  draw();
+});
+
+document.getElementById("btn-reset").addEventListener("click", init);
+
+document.getElementById("sl-alpha").addEventListener("input", e => {
+  paramAlpha = parseFloat(e.target.value);
+  document.getElementById("lbl-alpha").textContent = `α = ${paramAlpha.toFixed(1)}`;
+});
+document.getElementById("sl-p").addEventListener("input", e => {
+  paramP = parseFloat(e.target.value);
+  document.getElementById("lbl-p").textContent = `p = ${paramP.toFixed(2)}`;
+});
+document.getElementById("sl-L").addEventListener("input", e => {
+  paramL = parseInt(e.target.value);
+  const s = 2*paramL+1;
+  document.getElementById("lbl-L").textContent = `L = ${paramL} (${s}×${s})`;
+});
+document.getElementById("sl-speed").addEventListener("input", e => {
+  paramSpeed = parseInt(e.target.value);
+  document.getElementById("lbl-speed").textContent = `Δt/frame: ${(paramSpeed*0.02).toFixed(2)}`;
+});
+
+init();
+</script>
+</body>
+</html>

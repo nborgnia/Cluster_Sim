@@ -84,6 +84,10 @@
   .toggle-lbl input { accent-color: var(--accent-dim); cursor: pointer; }
   .warning { font-family: var(--mono); font-size: 11px; color: #c97; text-align: center;
     margin-top: 8px; display: none; }
+  /* Hide number input spinners */
+  .no-spin::-webkit-outer-spin-button,
+  .no-spin::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .no-spin { -moz-appearance: textfield; }
 
   @media (max-width: 600px) {
     .container { padding: 32px 16px 60px; }
@@ -159,24 +163,24 @@
       </div>
     </div>
     <div class="ctrl">
-      <label>α</label>
+      <label>slowdown α</label>
       <div class="ctrl-row">
         <input type="range" id="sl-alpha" min="0" max="5" step="0.1" value="0">
-        <input type="number" id="in-alpha" min="0" max="10" step="0.1" value="0">
+        <input type="number" id="in-alpha" min="0" max="10" step="0.1" value="0" class="no-spin">
       </div>
     </div>
     <div class="ctrl">
       <label>density p</label>
       <div class="ctrl-row">
         <input type="range" id="sl-p" min="0.05" max="0.95" step="0.05" value="0.5">
-        <input type="number" id="in-p" min="0.01" max="0.99" step="0.01" value="0.5">
+        <input type="number" id="in-p" min="0.01" max="0.99" step="0.01" value="0.5" class="no-spin">
       </div>
     </div>
     <div class="ctrl">
       <label>half-width L</label>
       <div class="ctrl-row">
         <input type="range" id="sl-L" min="10" max="80" step="5" value="30">
-        <input type="number" id="in-L" min="5" max="150" step="1" value="30">
+        <input type="number" id="in-L" min="5" max="150" step="1" value="30" class="no-spin">
       </div>
     </div>
     <div class="ctrl">
@@ -456,20 +460,9 @@ function drawHex(){
   const size=Math.min(sizeByW,sizeByH)*0.95;
   const W=CANVAS_PX,H=Math.ceil(1.5*S*size+size);
   canvas.width=W;canvas.height=H;
-  ctx.fillStyle="#1a1a1e";ctx.fillRect(0,0,W,H);
-  // Draw background rhombus
-  const cx=W/2,cy=H/2;
-  ctx.fillStyle="#f8f7f4";
-  // Corners of the rhombic domain
-  const corners=[[-L,0],[0,-L],[L,0],[0,L]];
-  ctx.beginPath();
-  corners.forEach((c,i)=>{
-    const px=cx+size*sqrt3*(c[0]+c[1]*0.5);
-    const py=cy+size*1.5*c[1];
-    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
-  });
-  ctx.closePath();ctx.fill();
+  ctx.fillStyle="#f8f7f4";ctx.fillRect(0,0,W,H);
 
+  const cx=W/2,cy=H/2;
   for(let qi=-L;qi<=L;qi++)for(let ri=-L;ri<=L;ri++){
     const idx=(qi+L)*S+(ri+L);
     const id=state.grid[idx];

@@ -131,9 +131,12 @@
 <p>
   The parameter <span class="math">α</span> is the key control. At
   <span class="math">α = 0</span>, all clusters move at the same speed regardless of
-  size — aggregation is fast and democratic. As <span class="math">α</span> increases,
-  large clusters become nearly immobile while small ones dart around and get absorbed,
-  producing a qualitatively different growth regime.
+  size — aggregation is fast and democratic. For <span class="math">α &gt; 0</span>,
+  large clusters become nearly immobile while small ones dart around and get absorbed.
+  For <span class="math">α &lt; 0</span>, the situation reverses: large clusters move
+  <em>faster</em> than small ones, producing explosive growth — once a cluster gets big
+  it races around the lattice absorbing everything in its path. This regime is relevant
+  to the question of whether an infinite component can form in finite time.
 </p>
 
 <h2>Interactive Simulation</h2>
@@ -163,10 +166,10 @@
       </div>
     </div>
     <div class="ctrl">
-      <label>slowdown α</label>
+      <label>exponent α</label>
       <div class="ctrl-row">
-        <input type="range" id="sl-alpha" min="0" max="5" step="0.1" value="0">
-        <input type="number" id="in-alpha" min="0" max="10" step="0.1" value="0" class="no-spin">
+        <input type="range" id="sl-alpha" min="-3" max="5" step="0.1" value="0">
+        <input type="number" id="in-alpha" min="-10" max="10" step="0.1" value="0" class="no-spin">
       </div>
     </div>
     <div class="ctrl">
@@ -249,27 +252,55 @@
   <span class="math">β = 1/(1 + α − γ)</span>.
 </p>
 <p>
-  The observed scaling <span class="math">β ≈ 1/α</span> implies
-  <span class="math">γ ≈ 1</span>: nearly every site in a cluster lies on its boundary.
-  This total ramification is physically plausible — clusters form by random collision and
-  stick rigidly without rearrangement, producing highly branched, tree-like structures
-  analogous to those observed in two-dimensional diffusion-limited cluster aggregation
-  (DLCA), where fractal dimensions of 1.4–1.5 are typical.
+  For low density <span class="math">p</span>, clusters are sparse and tree-like,
+  suggesting <span class="math">γ ≈ 1</span> (total ramification — every site is a
+  boundary site), which gives <span class="math">β ≈ 1/α</span>. At higher
+  <span class="math">p</span>, clusters are denser from the start and more likely to
+  form compact regions with interior sites, lowering <span class="math">γ</span> and
+  producing slower growth. The dependence of <span class="math">γ</span> on
+  <span class="math">p</span> is an interesting open question.
 </p>
 
-<div class="conjecture">
-  <div class="conjecture-title">Conjecture 1 — Growth rate</div>
-  For all α &gt; 0, &nbsp; 𝔼[|C₀(t)|] ~ t<sup>1/α</sup> &nbsp; as t → ∞.
-</div>
+<h3>Infinite components in finite time</h3>
+<p>
+  A central question in the study of this model is whether an infinite connected component
+  can emerge in finite time. The answer depends critically on <span class="math">α</span>.
+  For <span class="math">α &lt; 0</span>, large clusters move faster than small ones,
+  leading to explosive growth: a large cluster sweeps the lattice at an accelerating rate,
+  and heuristic arguments suggest an infinite component can form in finite time.
+  For large positive <span class="math">α</span>, big clusters are nearly frozen and growth
+  is slow, making finite-time emergence of an infinite component impossible.
+</p>
+<p>
+  The critical value of <span class="math">α</span> separating these two regimes — and
+  the precise nature of the transition — is an active area of research.
+  Prof. Berger's ongoing work addresses the existence and characterization of this
+  phase transition.
+</p>
 
 <h3>Open questions</h3>
 <p>
-  Several directions remain. The cluster ramification conjecture
-  (<span class="math">γ = 1</span>) can be tested directly by measuring the
-  perimeter-to-mass ratio in simulations. The functional form of
-  <span class="math">c(α)</span> near zero — whether it vanishes as a power,
-  stretched exponential, or faster — is an important open problem that would
-  clarify the relationship between cluster mobility and tail behavior.
+  Several directions remain open:
+</p>
+<p>
+  <strong>Cluster geometry.</strong> The ramification exponent
+  <span class="math">γ</span> can be measured directly from simulations by computing
+  boundary-to-mass ratios. Understanding how <span class="math">γ</span> depends on
+  <span class="math">p</span>, <span class="math">α</span>, and cluster size
+  would refine the growth-rate prediction and connect to the fractal geometry of
+  DLCA-like processes.
+</p>
+<p>
+  <strong>Critical α for infinite components.</strong> Determining the sharp threshold
+  in <span class="math">α</span> below which infinite components form in finite time,
+  and characterizing the behavior at criticality, is a fundamental open problem.
+</p>
+<p>
+  <strong>Tail behavior.</strong> Preliminary simulations suggest that cluster size
+  distributions decay exponentially for all <span class="math">α &gt; 0</span>,
+  with the rate approaching zero as <span class="math">α → 0</span>. The functional
+  form of this decay rate and whether a true power-law regime exists remain to be
+  determined.
 </p>
 
 <h2>About</h2>

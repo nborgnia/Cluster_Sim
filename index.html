@@ -493,7 +493,26 @@ function getStepsPerFrame(){
   if(!state)return 10;
   const nCl=state.clusters.size;
   const nPart=Math.round((2*state.L+1)**2*paramP);
-  const spp=(5+20*(1-paramP))*(1+Math.max(state.alpha,0.1));
+  const al=state.alpha;
+
+  if(al < -0.5) {
+    // Negative alpha: explosive regime. Big clusters move fast but at low density
+    // they still need to wander a long time to find things. Just ramp up steps
+    // aggressively as clusters thin out, and scale with how negative alpha is.
+    const absAl = Math.abs(al);
+    const baseSteps = Math.max(10, Math.round(nPart * 0.5 / (targetSeconds * 60)));
+    const frac = nCl / Math.max(nPart, 1);
+    let mult;
+    if (frac > 0.3) mult = 2;
+    else if (frac > 0.1) mult = 5 * absAl;
+    else if (frac > 0.03) mult = 15 * absAl;
+    else mult = 40 * absAl;
+    return Math.max(1, Math.min(Math.round(baseSteps * mult), 200000));
+  }
+
+  // Positive / zero alpha
+  const alphaFactor = 1 + Math.max(al, 0.1);
+  const spp=(5+20*(1-paramP))*alphaFactor;
   const tot=nPart*spp,frames=targetSeconds*60;
   let base=Math.max(1,Math.round(tot/frames));
   const frac=nCl/Math.max(nPart,1);
@@ -503,8 +522,8 @@ function getStepsPerFrame(){
   else base=Math.max(1,Math.round(base*0.1));
   if(nCl>1){
     let mx=0;for(const[,s]of state.clusters)if(s.length>mx)mx=s.length;
-    const mxR=Math.pow(Math.max(mx,1),-state.alpha);
-    const avgM=nPart/nCl,avgR=Math.pow(Math.max(avgM,1),-state.alpha);
+    const mxR=Math.pow(Math.max(mx,1),-al);
+    const avgM=nPart/nCl,avgR=Math.pow(Math.max(avgM,1),-al);
     const totR=nCl*avgR,bigM=base*mxR/Math.max(totR,0.001);
     if(bigM>3)base=Math.max(1,Math.round(base*3/bigM));
   }

@@ -303,6 +303,77 @@
   determined.
 </p>
 
+<h2>Limiting Regime: α → −∞</h2>
+<p>
+  For strongly negative <span class="math">α</span>, a single dominant cluster moves
+  so fast relative to all others that the process effectively reduces to one cluster
+  growing by absorbing stationary particles. In this regime, the cluster geometry depends
+  primarily on the initial density <span class="math">p</span>, and the process
+  resembles classical single-cluster growth models:
+</p>
+<p>
+  At <strong>high <span class="math">p</span></strong>, the lattice is nearly full and the
+  dominant cluster grows by filling its neighbors — resembling the
+  <em>Eden model</em>, which produces roughly circular, compact clusters.
+  At <strong>moderate <span class="math">p</span></strong>, the cluster explores a random
+  subgraph of occupied sites — resembling <em>percolation cluster exploration</em>,
+  where the geometry is governed by the connectivity threshold.
+  At <strong>low <span class="math">p</span></strong>, particles are so sparse that the
+  cluster must wander significantly between absorptions — resembling
+  <em>diffusion-limited aggregation</em> (DLA), which produces highly ramified,
+  fractal structures.
+</p>
+<p>
+  The simulation below shows these three classical models for comparison. The color
+  gradient indicates growth order (early sites are darker, later sites brighter).
+</p>
+
+<div class="sim-wrapper">
+  <div class="sim-canvas-wrap"><canvas id="grid2" width="560" height="560"></canvas></div>
+  <div class="sim-stats">
+    <span id="g2-desc">Eden Model — Uniform random boundary growth</span>
+    <span>· <span class="val" id="g2-step">0</span> sites</span>
+  </div>
+  <div class="sim-buttons">
+    <button id="g2-run" class="btn-run">Run</button>
+    <button id="g2-reset" class="btn-other">Reset</button>
+  </div>
+  <div class="sim-controls">
+    <div class="ctrl">
+      <label>model</label>
+      <div class="pill-group">
+        <button class="pill active" id="g2-eden">Eden</button>
+        <button class="pill" id="g2-dla">DLA</button>
+        <button class="pill" id="g2-perc">Percolation</button>
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>palette</label>
+      <div class="pill-group">
+        <button class="pill active" id="pal-plasma">plasma</button>
+        <button class="pill" id="pal-arctic">arctic</button>
+        <button class="pill" id="pal-ember">ember</button>
+        <button class="pill" id="pal-moss">moss</button>
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>grid</label>
+      <div class="pill-group">
+        <button class="pill" id="gs-40">40²</button>
+        <button class="pill active" id="gs-80">80²</button>
+        <button class="pill" id="gs-120">120²</button>
+        <button class="pill" id="gs-160">160²</button>
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>speed</label>
+      <div class="ctrl-row">
+        <input type="range" id="g2-speed" min="1" max="10" step="1" value="6">
+      </div>
+    </div>
+  </div>
+</div>
+
 <h2>About</h2>
 <p>
   This work is part of a Master's thesis at
@@ -599,6 +670,173 @@ document.getElementById("btn-reset").addEventListener("click",init);
 document.getElementById("cb-rotate").addEventListener("change",e=>{paramRotate=e.target.checked;});
 
 init();
+
+// ══════════════════════════════════════════════════════════════
+// SECOND SIM: Eden / DLA / Percolation
+// ══════════════════════════════════════════════════════════════
+const c2 = document.getElementById("grid2");
+const x2 = c2.getContext("2d");
+let g2 = {model:"eden", gridSize:80, palette:"plasma", speed:6, running:false, animId:null, state:null};
+
+const PALS = {
+  plasma:{bg:"#0a0a12",fn:t=>{const r=Math.min(255,t*2.5*255)|0,g=Math.max(0,Math.sin(t*Math.PI)*0.8*255)|0,b=Math.max(0,(1-t*1.8)*255)|0;return`rgb(${r},${g},${b})`;}},
+  arctic:{bg:"#060d18",fn:t=>`rgb(${40+80*t|0},${140+100*t|0},${200+55*Math.min(1,t*1.2)|0})`},
+  ember:{bg:"#100804",fn:t=>`rgb(${200+55*t|0},${60+140*t*t|0},${10+30*t|0})`},
+  moss:{bg:"#040d08",fn:t=>`rgb(${30+90*t|0},${120+135*t|0},${50+80*t*t|0})`},
+};
+
+function g2Neighbors(x,y,gs){
+  return[[0,1],[0,-1],[1,0],[-1,0]].map(([dx,dy])=>[x+dx,y+dy]).filter(([a,b])=>a>=0&&b>=0&&a<gs&&b<gs);
+}
+function g2Init(){
+  const gs=g2.gridSize, cx=gs>>1, cy=gs>>1;
+  const occ=new Set([`${cx},${cy}`]);
+  const tm=new Map([[`${cx},${cy}`,0]]);
+  const bnd=new Set();
+  const open=new Set([`${cx},${cy}`]);
+  if(g2.model==="percolation"){
+    for(let x=0;x<gs;x++)for(let y=0;y<gs;y++)if(Math.random()<0.59)open.add(`${x},${y}`);
+    open.add(`${cx},${cy}`);
+  }
+  for(const[nx,ny]of g2Neighbors(cx,cy,gs)){
+    const nk=`${nx},${ny}`;
+    if(g2.model==="percolation"){if(open.has(nk))bnd.add(nk);}else bnd.add(nk);
+  }
+  g2.state={occ,bnd,tm,step:0,maxR:1,open};
+}
+function g2StepEden(){
+  const{occ,bnd,tm,step}=g2.state;const gs=g2.gridSize;
+  if(!bnd.size)return false;
+  const arr=Array.from(bnd),pick=arr[Math.random()*arr.length|0];
+  bnd.delete(pick);occ.add(pick);tm.set(pick,step+1);
+  const[px,py]=pick.split(",").map(Number);
+  for(const[nx,ny]of g2Neighbors(px,py,gs)){const nk=`${nx},${ny}`;if(!occ.has(nk))bnd.add(nk);}
+  g2.state.step++;return true;
+}
+function g2Touches(wx,wy,occ){
+  for(const[dx,dy]of[[0,1],[0,-1],[1,0],[-1,0]])if(occ.has(`${wx+dx},${wy+dy}`))return true;
+  return false;
+}
+function g2StepDLA(){
+  const{occ,bnd,tm,step}=g2.state;const gs=g2.gridSize;
+  const cx=gs>>1,cy=gs>>1;let{maxR}=g2.state;
+  const launchR=maxR+5,killR=launchR*3;
+  const dirs=[[0,1],[0,-1],[1,0],[-1,0]];
+  for(let iter=0;iter<200000;iter++){
+    const a=Math.random()*Math.PI*2;
+    let wx=cx+Math.round(launchR*Math.cos(a)),wy=cy+Math.round(launchR*Math.sin(a));
+    for(let s=0;s<200000;s++){
+      const[dx,dy]=dirs[Math.random()*4|0];
+      const nx=wx+dx,ny=wy+dy;
+      if(occ.has(`${nx},${ny}`))continue;
+      wx=nx;wy=ny;
+      if(g2Touches(wx,wy,occ)){
+        if(wx>=0&&wy>=0&&wx<gs&&wy<gs){
+          const k=`${wx},${wy}`;occ.add(k);tm.set(k,step+1);bnd.delete(k);
+          for(const[ddx,ddy]of dirs){const nk=`${wx+ddx},${wy+ddy}`;if(!occ.has(nk))bnd.add(nk);}
+          const d=Math.sqrt((wx-cx)**2+(wy-cy)**2);if(d>maxR)g2.state.maxR=d;
+          g2.state.step++;return true;
+        }break;
+      }
+      if(Math.sqrt((wx-cx)**2+(wy-cy)**2)>killR)break;
+    }
+  }
+  return false;
+}
+function g2StepPerc(){
+  const{occ,bnd,tm,step,open}=g2.state;const gs=g2.gridSize;
+  if(!bnd.size)return false;
+  const arr=Array.from(bnd),pick=arr[Math.random()*arr.length|0];
+  bnd.delete(pick);occ.add(pick);tm.set(pick,step+1);
+  const[px,py]=pick.split(",").map(Number);
+  for(const[nx,ny]of g2Neighbors(px,py,gs)){
+    const nk=`${nx},${ny}`;if(!occ.has(nk)&&!bnd.has(nk)&&open.has(nk))bnd.add(nk);
+  }
+  g2.state.step++;return true;
+}
+function g2Draw(){
+  if(!g2.state)return;
+  const gs=g2.gridSize,pal=PALS[g2.palette],sz=c2.width,cell=sz/gs;
+  x2.fillStyle=pal.bg;x2.fillRect(0,0,sz,sz);
+  const{occ,bnd,tm,step,maxR}=g2.state;const ms=Math.max(step,1);
+  for(const k of occ){
+    const[a,b]=k.split(",").map(Number);
+    x2.fillStyle=pal.fn((tm.get(k)||0)/ms);
+    x2.fillRect(a*cell,b*cell,cell+0.5,cell+0.5);
+  }
+  if(g2.model!=="dla"){
+    x2.globalAlpha=0.35;
+    for(const k of bnd){const[a,b]=k.split(",").map(Number);x2.fillStyle="#fff";x2.fillRect(a*cell,b*cell,cell+0.5,cell+0.5);}
+    x2.globalAlpha=1;
+  }else{
+    const cx=gs>>1,cy=gs>>1,lr=(maxR||1)+5;
+    x2.beginPath();x2.arc(cx*cell+cell/2,cy*cell+cell/2,lr*cell,0,Math.PI*2);
+    x2.strokeStyle="rgba(255,255,255,0.08)";x2.lineWidth=1;x2.setLineDash([4,6]);x2.stroke();x2.setLineDash([]);
+  }
+  document.getElementById("g2-step").textContent=step;
+}
+const G2_DESC={eden:"Eden Model — Uniform random boundary growth",dla:"DLA — Diffusion-limited aggregation from ∞",percolation:"Site Percolation — Cluster exploration, p = 0.59"};
+function g2Tick(){
+  if(!g2.running)return;
+  let ok=true;
+  if(g2.model==="dla"){
+    const n=Math.max(1,g2.speed>>1);
+    for(let i=0;i<n&&ok;i++)ok=g2StepDLA();
+  }else{
+    const n=Math.max(1,Math.floor(g2.speed*2));
+    for(let i=0;i<n&&ok;i++)ok=g2.model==="eden"?g2StepEden():g2StepPerc();
+  }
+  g2Draw();
+  if(!ok){g2Stop();return;}
+  g2.animId=requestAnimationFrame(g2Tick);
+}
+function g2Stop(){
+  g2.running=false;if(g2.animId)cancelAnimationFrame(g2.animId);g2.animId=null;
+  document.getElementById("g2-run").textContent="Run";
+  document.getElementById("g2-run").className="btn-run";
+}
+function g2Reset(){g2Stop();g2Init();g2Draw();document.getElementById("g2-desc").textContent=G2_DESC[g2.model];}
+
+function setG2Model(m,id){
+  g2.model=m;
+  ["g2-eden","g2-dla","g2-perc"].forEach(x=>document.getElementById(x).classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  g2Reset();
+}
+function setG2Pal(p,id){
+  g2.palette=p;
+  ["pal-plasma","pal-arctic","pal-ember","pal-moss"].forEach(x=>document.getElementById(x).classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  g2Draw();
+}
+function setG2Grid(gs,id){
+  g2.gridSize=gs;
+  ["gs-40","gs-80","gs-120","gs-160"].forEach(x=>document.getElementById(x).classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  g2Reset();
+}
+document.getElementById("g2-eden").addEventListener("click",()=>setG2Model("eden","g2-eden"));
+document.getElementById("g2-dla").addEventListener("click",()=>setG2Model("dla","g2-dla"));
+document.getElementById("g2-perc").addEventListener("click",()=>setG2Model("percolation","g2-perc"));
+document.getElementById("pal-plasma").addEventListener("click",()=>setG2Pal("plasma","pal-plasma"));
+document.getElementById("pal-arctic").addEventListener("click",()=>setG2Pal("arctic","pal-arctic"));
+document.getElementById("pal-ember").addEventListener("click",()=>setG2Pal("ember","pal-ember"));
+document.getElementById("pal-moss").addEventListener("click",()=>setG2Pal("moss","pal-moss"));
+document.getElementById("gs-40").addEventListener("click",()=>setG2Grid(40,"gs-40"));
+document.getElementById("gs-80").addEventListener("click",()=>setG2Grid(80,"gs-80"));
+document.getElementById("gs-120").addEventListener("click",()=>setG2Grid(120,"gs-120"));
+document.getElementById("gs-160").addEventListener("click",()=>setG2Grid(160,"gs-160"));
+document.getElementById("g2-speed").addEventListener("input",e=>{g2.speed=parseInt(e.target.value);});
+document.getElementById("g2-run").addEventListener("click",()=>{
+  if(g2.running){g2Stop();}else{
+    g2.running=true;document.getElementById("g2-run").textContent="Pause";
+    document.getElementById("g2-run").className="btn-pause";
+    g2.animId=requestAnimationFrame(g2Tick);
+  }
+});
+document.getElementById("g2-reset").addEventListener("click",g2Reset);
+
+g2Init();g2Draw();
 </script>
 </body>
 </html>

@@ -276,8 +276,10 @@
   At scale $n$, the relevant clusters move at rate $\sim (2^n)^{-\alpha} = 2^{-n\alpha}$.
   The time needed for scale-$n$ dynamics to play out is $\sim 2^{n\alpha}$ (the inverse
   of the rate). At scale $n+1$, the rate is $2^{-(n+1)\alpha}$, and the timescale is
-  $2^{(n+1)\alpha}$. The ratio is $2^{\alpha}$, which for large $\alpha$ is enormous:
-  the scale-$(n+1)$ dynamics are exponentially slower than the scale-$n$ dynamics.
+  $2^{(n+1)\alpha}$. The ratio between successive timescales is the constant $2^{\alpha}$:
+  scale-$(n+1)$ dynamics are slower than scale-$n$ dynamics by a factor of $2^{\alpha}$.
+  For large $\alpha$ this factor is large, providing clean separation; for moderate $\alpha$
+  the scales begin to overlap.
 </p>
 <p>
   This <em>separation of scales</em> means that, to a good approximation, each scale
@@ -290,12 +292,16 @@
 <div class="env env-remark">
   <div class="env-label">Remark (imperfect separation)</div>
   <p>
-    The timescale separation is not exact. A scale-$(n+1)$ merger has probability
-    $\sim 2^{-\alpha}$ of occurring during the scale-$n$ window. For large $\alpha$
+    The timescale separation is not exact. During the scale-$n$ window (duration
+    $\sim 2^{n\alpha}$), each scale-$(n+1)$ cluster fires at rate $2^{-(n+1)\alpha}$,
+    so the probability of a premature scale-$(n+1)$ merger is
+    $\sim 2^{n\alpha} \cdot 2^{-(n+1)\alpha} = 2^{-\alpha}$. For large $\alpha$
     this leakage is small, but it can compound: a premature merger at scale $n+1$
-    enlarges the boundary at scale $n$, potentially spawning new branching processes.
-    Handling this rigorously requires either a joint multi-scale branching process or
-    accepting the argument as a "large $\alpha$" result.
+    enlarges the origin cluster and exposes new boundary, potentially spawning
+    new branches of the scale-$n$ branching process. Handling this rigorously
+    requires either a joint multi-scale branching process or accepting the argument
+    as a "large $\alpha$" result where the $2^{-\alpha}$ leakage is a small
+    perturbation.
   </p>
 </div>
 
@@ -307,10 +313,17 @@
   lattice to have $O(1)$ neighbors.
 </p>
 <p>
-  If each cluster at scale $n$ has $O(1)$ neighbors, then the branching domination
-  at scale $n+1$ is again a subcritical Galton–Watson tree (with the same offspring
-  distribution, up to constants). The mass gained at scale $n$ is then $O(2^n)$,
-  and the total mass after $n$ scales is $\sum_{j=0}^n O(2^j) = O(2^n)$.
+  At scale $n$, each "child" in the branching process corresponds to a neighboring
+  cluster of mass $\sim 2^n$ merging into the origin cluster. So each child
+  contributes mass $\sim 2^n$, and the total mass gained at scale $n$ is
+  $T_n \cdot 2^n$, where $T_n$ is the total progeny of the scale-$n$ branching process.
+</p>
+<p>
+  If the origin cluster has $O(1)$ neighbors at scale $n$ — that is, the coarsened
+  tessellation looks locally like $\mathbb{Z}^2$ — then the branching process at
+  scale $n$ has $O(1)$ roots, each with offspring $\operatorname{Bin}(3, 1/4)$.
+  The expected progeny is $O(1)$, so the mass gained at scale $n$ is $O(2^n)$.
+  Summing: total mass after $n$ scales is $\sum_{j=0}^n O(2^j) = O(2^n)$.
 </p>
 <p>
   Combining with the timescale: the time to complete $n$ scales is
@@ -320,14 +333,25 @@
 $$|C_0(t)| \lesssim 2^n = (2^{n\alpha})^{1/\alpha} \sim t^{1/\alpha}.$$
 
 <div class="env env-remark">
-  <div class="env-label">Remark (the gap)</div>
+  <div class="env-label">Remark (the gap — worst-case without $O(1)$ neighbors)</div>
   <p>
-    The $O(1)$-neighbor property is the main unproven input. Without it, one must
-    allow $O(2^n)$ neighbors at scale $n$ (the worst case for a cluster of mass
-    $2^n$), which yields a weaker bound of $|C_0(t)| \lesssim t^{2/\alpha}$.
-    The heuristic justification is that by translation invariance, the tessellation
-    at each scale is statistically homogeneous — no cluster is geometrically
-    privileged — so the number of neighbors should not grow with scale.
+    Without the $O(1)$-neighbor property, we must use the worst-case bound: a cluster
+    of mass $\sim 2^n$ could have up to $O(2^n)$ boundary neighbors at scale $n$.
+    But the number of neighbors at scale $n$ depends on the <em>outcome of the
+    previous scale</em> — the origin cluster's mass after scale $n-1$ determines
+    its boundary size at scale $n$. This creates a multiplicative feedback:
+    the branching process at scale $n$ has $O(|C_0^{(n-1)}|)$ roots, each
+    contributing mass $\sim 2^n$. If $\mathbb{E}[T_n] \sim |C_0^{(n-1)}|$ at each
+    scale, the mass compounds as $|C_0^{(n)}| \sim |C_0^{(n-1)}| \cdot 2^n$,
+    yielding $|C_0| \sim 4^n$ after $n$ scales and a weaker bound of
+    $|C_0(t)| \lesssim t^{2/\alpha}$.
+  </p>
+  <p>
+    The heuristic justification for $O(1)$ neighbors is translation invariance:
+    at each scale, the tessellation is statistically homogeneous — no cluster is
+    geometrically privileged — so the coarsened lattice should resemble
+    $\mathbb{Z}^2$ with $O(1)$ neighbors per cell. Proving this geometric
+    property is the main near-term goal.
   </p>
 </div>
 

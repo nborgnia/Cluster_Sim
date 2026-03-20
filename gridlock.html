@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gridlock &amp; Separation of Scales — CCA on ℤ²</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+<style>
+  :root {
+    --bg: #0f0f12; --surface: #1a1a1e; --border: #2a2a30;
+    --text: #d4d0c8; --text-dim: #7a7770; --text-bright: #f0ede6;
+    --accent: #8ba4b8; --accent-dim: #5a7080;
+    --serif: 'Source Serif 4', Georgia, serif;
+    --mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+    --proof-bg: rgba(139,164,184,0.04);
+    --conjecture-border: #8ba4b8;
+    --remark-border: #a89060;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--serif); background: var(--bg); color: var(--text);
+    line-height: 1.75; font-size: 17px; }
+
+  /* Navigation */
+  nav { position: sticky; top: 0; z-index: 100; background: rgba(15,15,18,0.92);
+    backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+    padding: 12px 24px; font-family: var(--mono); font-size: 13px; }
+  nav .nav-inner { max-width: 820px; margin: 0 auto; display: flex;
+    align-items: center; gap: 24px; flex-wrap: wrap; }
+  nav a { color: var(--text-dim); text-decoration: none; transition: color 0.15s; }
+  nav a:hover, nav a.active { color: var(--accent); }
+  nav .nav-title { color: var(--text-bright); font-weight: 500; margin-right: auto; }
+
+  .container { max-width: 820px; margin: 0 auto; padding: 48px 24px 80px; }
+
+  h1 { font-size: 30px; font-weight: 600; color: var(--text-bright);
+    letter-spacing: -0.01em; margin-bottom: 6px; }
+  .byline { font-size: 13px; color: var(--text-dim); margin-bottom: 40px;
+    font-family: var(--mono); }
+  .byline a { color: var(--accent-dim); text-decoration: none; }
+
+  h2 { font-size: 21px; font-weight: 600; color: var(--text-bright);
+    margin: 44px 0 14px; border-bottom: 1px solid var(--border); padding-bottom: 7px; }
+  h3 { font-size: 17px; font-weight: 600; color: var(--accent); margin: 28px 0 10px; }
+
+  p { margin-bottom: 14px; }
+  em { color: var(--text-bright); }
+
+  /* Math blocks */
+  .katex-display { margin: 20px 0 !important; }
+  .katex { font-size: 1.05em; }
+
+  /* Theorem-like environments */
+  .env { margin: 24px 0; padding: 16px 20px; border-radius: 0 6px 6px 0;
+    background: var(--proof-bg); }
+  .env-label { font-family: var(--mono); font-size: 13px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+  .env-proposition { border-left: 3px solid var(--accent); }
+  .env-proposition .env-label { color: var(--accent); }
+  .env-conjecture { border-left: 3px solid var(--conjecture-border); }
+  .env-conjecture .env-label { color: var(--conjecture-border); }
+  .env-remark { border-left: 3px solid var(--remark-border); }
+  .env-remark .env-label { color: var(--remark-border); }
+  .env-proof { border-left: 2px solid var(--border); background: transparent;
+    padding-left: 18px; }
+  .env-proof .env-label { color: var(--text-dim); font-style: italic;
+    text-transform: none; letter-spacing: 0; }
+  .env-proof .qed { text-align: right; color: var(--text-dim); margin-top: 8px; }
+
+  /* Epoch viewer */
+  .epoch-viewer { background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 24px; margin: 32px 0; }
+  .epoch-canvases { display: flex; gap: 12px; justify-content: center;
+    flex-wrap: wrap; margin-bottom: 16px; }
+  .epoch-frame { position: relative; }
+  .epoch-frame canvas { border: 1px solid var(--border); border-radius: 4px;
+    cursor: pointer; transition: box-shadow 0.2s; }
+  .epoch-frame canvas.selected { box-shadow: 0 0 0 2px var(--accent); }
+  .epoch-label { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono); font-size: 11px; color: var(--text-bright);
+    background: rgba(15,15,18,0.85); padding: 2px 8px; border-radius: 3px;
+    pointer-events: none; white-space: nowrap; }
+  .epoch-desc { text-align: center; font-family: var(--mono); font-size: 13px;
+    color: var(--text-dim); margin-bottom: 12px; min-height: 38px; }
+  .epoch-desc .val { color: var(--text-bright); }
+  .epoch-controls { display: flex; gap: 10px; justify-content: center;
+    flex-wrap: wrap; align-items: center; }
+  .epoch-controls button { padding: 7px 16px; font-size: 13px; font-family: var(--mono);
+    font-weight: 500; color: var(--text-bright); border: none; border-radius: 4px;
+    cursor: pointer; transition: background 0.15s; }
+  .btn-run { background: #2d6a4f; } .btn-run:hover { background: #3a8060; }
+  .btn-pause { background: #9b2c2c; } .btn-pause:hover { background: #b33; }
+  .btn-other { background: #3a3a40; } .btn-other:hover { background: #4a4a50; }
+  .epoch-controls .pill-group { display: flex; gap: 3px; }
+  .epoch-controls .pill { padding: 4px 10px; font-size: 11px; font-family: var(--mono);
+    background: #2a2a30; color: var(--text-dim); border: none; border-radius: 3px;
+    cursor: pointer; transition: all 0.15s; }
+  .epoch-controls .pill.active { background: var(--accent-dim); color: var(--text-bright); }
+  .epoch-controls label { font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* Back to top */
+  .back-link { font-family: var(--mono); font-size: 13px; color: var(--text-dim);
+    text-decoration: none; display: inline-block; margin-top: 48px; }
+  .back-link:hover { color: var(--accent); }
+
+  @media (max-width: 700px) {
+    .epoch-canvases { flex-direction: column; align-items: center; }
+    .container { padding: 32px 16px 60px; }
+    h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <span class="nav-title">CCA on ℤ²</span>
+    <a href="index.html">Simulation</a>
+    <a href="gridlock.html" class="active">Gridlock</a>
+    <a href="exponential.html">Exponential regime</a>
+    <a href="nonexplosion.html">Nonexplosion</a>
+    <a href="ergodicity.html">Ergodicity</a>
+    <a href="directions.html">Open problems</a>
+  </div>
+</nav>
+
+<div class="container">
+
+<h1>Gridlock and the Separation of Scales</h1>
+<p class="byline">
+  Noam Borgnia · Thesis work under
+  <a href="https://www.professoren.tum.de/en/berger-noam">Prof. Noam Berger</a>, TU Munich
+</p>
+
+<p>
+  For large $\alpha$, the CCA dynamics exhibit a striking hierarchical structure: clusters grow
+  until they reach a mass at which they are effectively frozen on the current timescale, a
+  tessellation of frozen clusters forms, and growth resumes only when the next (much slower)
+  timescale becomes relevant. We call this phenomenon <em>gridlock</em>. It is the key
+  mechanism behind the conjectured $t^{1/\alpha}$ growth rate.
+</p>
+<p>
+  The argument below is developed for full initial occupancy ($p = 1$), but the simulations
+  suggest the same mechanism operates for all $p > 0$. The epoch viewer below illustrates
+  gridlock at different time scales.
+</p>
+
+<h2>Visualizing gridlock</h2>
+<p>
+  The simulation below runs the CCA dynamics at a large value of $\alpha$ and captures
+  snapshots at three characteristic time epochs. Click any frame to enlarge it, or use the
+  controls to adjust $\alpha$ and re-run.
+</p>
+<p>
+  At <em>early times</em>, singletons merge rapidly into small clusters of mass $O(1)$.
+  By the <em>mid epoch</em>, these small clusters have frozen into a tessellation — they
+  tile the plane, caging any remaining mobile particles. At <em>late times</em>, only
+  the slow dynamics of the now-larger clusters are visible, and the process repeats at
+  the next scale.
+</p>
+
+<div class="epoch-viewer">
+  <div class="epoch-canvases" id="epoch-frames">
+    <div class="epoch-frame">
+      <canvas id="ep-c0" width="240" height="240"></canvas>
+      <div class="epoch-label" id="ep-l0">Early</div>
+    </div>
+    <div class="epoch-frame">
+      <canvas id="ep-c1" width="240" height="240"></canvas>
+      <div class="epoch-label" id="ep-l1">Mid</div>
+    </div>
+    <div class="epoch-frame">
+      <canvas id="ep-c2" width="240" height="240"></canvas>
+      <div class="epoch-label" id="ep-l2">Late</div>
+    </div>
+  </div>
+  <div class="epoch-desc" id="ep-desc">
+    Press <span class="val">Run</span> to simulate gridlock formation.
+  </div>
+  <div class="epoch-controls">
+    <button id="ep-run" class="btn-run">Run</button>
+    <button id="ep-reset" class="btn-other">Reset</button>
+    <div>
+      <label>α</label>
+      <div class="pill-group">
+        <button class="pill" id="ep-a2">2</button>
+        <button class="pill active" id="ep-a3">3</button>
+        <button class="pill" id="ep-a4">4</button>
+        <button class="pill" id="ep-a5">5</button>
+      </div>
+    </div>
+    <div>
+      <label>density</label>
+      <div class="pill-group">
+        <button class="pill" id="ep-p05">0.5</button>
+        <button class="pill active" id="ep-p1">1.0</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>The frozen model at scale $M$</h2>
+<p>
+  To analyze the gridlock mechanism, we introduce a simplified model. Fix a mass cutoff $M$.
+  The <em>frozen model at scale $M$</em> modifies the CCA dynamics so that any cluster
+  reaching mass $\geq M$ is frozen: it no longer initiates jumps, but can still passively
+  receive mobile clusters that merge into it.
+</p>
+<p>
+  For $M = 2$ with full initial occupancy on $\mathbb{Z}^2$, the dynamics are particularly
+  clean. Each singleton has an independent $\operatorname{Exp}(1)$ clock. When it rings,
+  the singleton picks one of its $4$ lattice neighbors uniformly at random and joins that
+  neighbor's cluster. Once a cluster reaches mass $\geq 2$, it freezes.
+</p>
+
+<div class="env env-proposition">
+  <div class="env-label">Proposition (Branching domination at $M = 2$)</div>
+  <p>
+    In the frozen model at scale $M = 2$ with full initial occupancy on $\mathbb{Z}^2$,
+    the origin cluster $C_0$ satisfies
+    $$|C_0| \preceq |\mathcal{T}_0|,$$
+    where $\mathcal{T}_0$ is a Galton–Watson tree with offspring distribution
+    $\operatorname{Bin}(3, 1/4)$, and $\preceq$ denotes stochastic domination.
+  </p>
+</div>
+
+<div class="env env-proof">
+  <div class="env-label">Proof.</div>
+  <p>
+    We explore the boundary of $C_0$ in breadth-first order and couple the growth with a
+    branching process. The root is the origin. At each step, we process the next boundary
+    singleton $x$ adjacent to $C_0$ by flipping an independent $\operatorname{Ber}(1/4)$ coin:
+  </p>
+  <p>
+    On <em>success</em> (probability $1/4$): $x$ joins $C_0$, and its at most $3$
+    non-$C_0$ neighbors are added to the exploration queue as children of $x$.
+    On <em>failure</em> (probability $3/4$): $x$ does not join $C_0$ and is a leaf.
+  </p>
+  <p>
+    The coupling overestimates growth for two reasons.
+    First, each coin flip is an overestimate: in the true process, $x$ picks one of its $4$ neighbors
+    uniformly, so the probability it picks the direction toward $C_0$ is at most $1/4$.
+    Moreover, $x$ might be absorbed by a different cluster before its clock rings.
+    Second, if $C_0$ grows around a site so that it is adjacent from two directions,
+    the branching process gives it two independent chances to join (as a child in two branches),
+    while the true process gives it only one.
+  </p>
+  <p>
+    Since each successful vertex contributes at most $3$ children, each succeeding
+    independently with probability $\leq 1/4$, the offspring distribution is dominated
+    by $\operatorname{Bin}(3, 1/4)$.
+  </p>
+  <div class="qed">$\square$</div>
+</div>
+
+<p>
+  The offspring mean is $\mu = 3/4 < 1$, so the tree is subcritical.
+  Standard results (the Dwass–Kemperman formula) give
+  $$\mathbb{P}(|C_0| \geq k) \leq C \cdot (3/4)^k \, k^{-3/2}$$
+  and $\mathbb{E}[|C_0|] = 1/(1 - 3/4) = 4$. So in the frozen model at $M = 2$,
+  the origin cluster is almost surely finite with exponentially decaying tails.
+</p>
+
+<h2>Timescale separation and the multi-scale picture</h2>
+<p>
+  The power of the frozen model comes from iterating it across scales. Consider the
+  full (unfrozen) dynamics. We define <em>dyadic scales</em>: scale $n$ consists
+  of clusters with mass in $[2^{n-1}, 2^n)$.
+</p>
+<p>
+  At scale $n$, the relevant clusters move at rate $\sim (2^n)^{-\alpha} = 2^{-n\alpha}$.
+  The time needed for scale-$n$ dynamics to play out is $\sim 2^{n\alpha}$ (the inverse
+  of the rate). At scale $n+1$, the rate is $2^{-(n+1)\alpha}$, and the timescale is
+  $2^{(n+1)\alpha}$. The ratio is $2^{\alpha}$, which for large $\alpha$ is enormous:
+  the scale-$(n+1)$ dynamics are exponentially slower than the scale-$n$ dynamics.
+</p>
+<p>
+  This <em>separation of scales</em> means that, to a good approximation, each scale
+  completes its dynamics before the next one begins. At scale $1$, singletons merge
+  into clusters of mass $\sim 2$. These then freeze (on the scale-$1$ timescale) and
+  tile the plane. At scale $2$, the mass-$2$ clusters begin to merge — but now they
+  behave like "super-singletons" on a coarsened lattice. The process repeats.
+</p>
+
+<div class="env env-remark">
+  <div class="env-label">Remark (imperfect separation)</div>
+  <p>
+    The timescale separation is not exact. A scale-$(n+1)$ merger has probability
+    $\sim 2^{-\alpha}$ of occurring during the scale-$n$ window. For large $\alpha$
+    this leakage is small, but it can compound: a premature merger at scale $n+1$
+    enlarges the boundary at scale $n$, potentially spawning new branching processes.
+    Handling this rigorously requires either a joint multi-scale branching process or
+    accepting the argument as a "large $\alpha$" result.
+  </p>
+</div>
+
+<h2>The geometric bottleneck</h2>
+<p>
+  To push the frozen-model argument through multiple scales, we need a key geometric
+  input: that the tessellation at each scale has bounded local complexity. Specifically,
+  after the scale-$n$ dynamics complete, we need the origin cluster on the coarsened
+  lattice to have $O(1)$ neighbors.
+</p>
+<p>
+  If each cluster at scale $n$ has $O(1)$ neighbors, then the branching domination
+  at scale $n+1$ is again a subcritical Galton–Watson tree (with the same offspring
+  distribution, up to constants). The mass gained at scale $n$ is then $O(2^n)$,
+  and the total mass after $n$ scales is $\sum_{j=0}^n O(2^j) = O(2^n)$.
+</p>
+<p>
+  Combining with the timescale: the time to complete $n$ scales is
+  $\sum_{j=0}^n 2^{j\alpha} \sim 2^{n\alpha}$, so setting $t \sim 2^{n\alpha}$
+  gives $n \sim \frac{\log t}{\alpha}$ and
+</p>
+$$|C_0(t)| \lesssim 2^n = (2^{n\alpha})^{1/\alpha} \sim t^{1/\alpha}.$$
+
+<div class="env env-remark">
+  <div class="env-label">Remark (the gap)</div>
+  <p>
+    The $O(1)$-neighbor property is the main unproven input. Without it, one must
+    allow $O(2^n)$ neighbors at scale $n$ (the worst case for a cluster of mass
+    $2^n$), which yields a weaker bound of $|C_0(t)| \lesssim t^{2/\alpha}$.
+    The heuristic justification is that by translation invariance, the tessellation
+    at each scale is statistically homogeneous — no cluster is geometrically
+    privileged — so the number of neighbors should not grow with scale.
+  </p>
+</div>
+
+<div class="env env-conjecture">
+  <div class="env-label">Conjecture (growth rate)</div>
+  <p>
+    For the CCA model on $\mathbb{Z}^2$ with full initial occupancy and $\alpha > 0$,
+    $$\mathbb{E}[|C_0(t)|] \asymp t^{1/\alpha}.$$
+  </p>
+</div>
+
+<h3>The case $r(m) = 2^{-\alpha m}$</h3>
+<p>
+  For the exponential mass-velocity relation $r(m) = 2^{-\alpha m}$, the timescale
+  separation becomes <em>doubly exponential</em>: the time to reach scale $n$ is
+  $\sum_{j=0}^n 2^{\alpha \cdot 2^j} \sim 2^{\alpha \cdot 2^n}$.
+  Setting $t \sim 2^{\alpha \cdot 2^n}$ gives $n \sim \log_2(\log_2 t / \alpha)$,
+  so
+</p>
+$$|C_0(t)| \lesssim 2^n \sim \frac{1}{\alpha}\log_2 t.$$
+<p>
+  This ultra-slow logarithmic growth reflects the extreme gridlock in the exponential
+  regime: every additional doubling of cluster mass requires an exponentially longer
+  wait, and the rigorous analysis (presented on the
+  <a href="exponential.html" style="color:var(--accent)">exponential regime page</a>)
+  yields a subexponential upper bound via worst-case neighbor estimates.
+</p>
+
+<h2>Summary of results and status</h2>
+<p>
+  For the frozen model at $M = 2$, the Galton–Watson domination and almost-sure
+  freezing are rigorous. The multi-scale extension to the unfrozen process is
+  conditional on two inputs: the timescale separation (controlled for large $\alpha$)
+  and the $O(1)$-neighbor property of the tessellation (currently a conjecture,
+  supported by simulation evidence and a translation-invariance heuristic).
+  Proving this geometric property is the main near-term goal.
+</p>
+
+<a href="index.html" class="back-link">← Back to simulation</a>
+
+</div><!-- /container -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     EPOCH VIEWER: CCA engine + snapshot capture
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  // === CCA ENGINE (minimal, square lattice only) ===
+  const SQ_DIRS = [[1,0],[-1,0],[0,1],[0,-1]];
+  function sqWrap(x,L){ const S=2*L+1; return ((x+L)%S+S)%S-L; }
+
+  function createState(p, alpha, L){
+    const S=2*L+1, grid=new Int32Array(S*S).fill(-1), clusters=new Map();
+    let nextId=0;
+    for(let x=-L;x<=L;x++) for(let y=-L;y<=L;y++){
+      if(Math.random()<p){
+        grid[(x+L)*S+(y+L)] = nextId;
+        clusters.set(nextId, [{x,y}]);
+        nextId++;
+      }
+    }
+    return {grid, clusters, time:0, alpha, L, nextId, steps:0};
+  }
+
+  function step(st){
+    const {grid, clusters, alpha, L} = st;
+    const S=2*L+1;
+    if(clusters.size<=1) return;
+    const cids=Array.from(clusters.keys());
+    const masses=cids.map(c=>clusters.get(c).length);
+    const rates=masses.map(m=>Math.pow(m,-alpha));
+    const totalRate=rates.reduce((a,b)=>a+b,0);
+    st.time += -Math.log(Math.random())/totalRate;
+    st.steps++;
+    let r=Math.random()*totalRate, chosen=0;
+    for(let i=0;i<rates.length;i++){r-=rates[i];if(r<=0){chosen=i;break;}}
+    const cidA=cids[chosen], sitesA=clusters.get(cidA);
+    const dir=SQ_DIRS[Math.floor(Math.random()*4)];
+    const proposed=sitesA.map(s=>({x:sqWrap(s.x+dir[0],L), y:sqWrap(s.y+dir[1],L)}));
+    const foreign=new Set();
+    for(const s of proposed){
+      const other=grid[(s.x+L)*S+(s.y+L)];
+      if(other>=0 && other!==cidA) foreign.add(other);
+    }
+    if(foreign.size>0){
+      const arr=Array.from(foreign);
+      const cidB=arr[Math.floor(Math.random()*arr.length)];
+      const sitesB=clusters.get(cidB);
+      let keeper,absorbed,keptSites,absorbedSites;
+      if(sitesA.length>=sitesB.length){
+        keeper=cidA;absorbed=cidB;keptSites=sitesA;absorbedSites=sitesB;
+      } else {
+        keeper=cidB;absorbed=cidA;keptSites=sitesB;absorbedSites=sitesA;
+      }
+      for(const s of absorbedSites) grid[(s.x+L)*S+(s.y+L)]=keeper;
+      clusters.set(keeper, keptSites.concat(absorbedSites));
+      clusters.delete(absorbed);
+    } else {
+      for(const s of sitesA) grid[(s.x+L)*S+(s.y+L)]=-1;
+      for(const s of proposed) grid[(s.x+L)*S+(s.y+L)]=cidA;
+      clusters.set(cidA, proposed);
+    }
+  }
+
+  // === DRAWING ===
+  function drawState(st, canvas){
+    const ctx=canvas.getContext("2d");
+    const S=2*st.L+1, cs=Math.max(Math.floor(canvas.width/S),1), W=S*cs;
+    canvas.width=W; canvas.height=W;
+    ctx.fillStyle="#0a0a12"; ctx.fillRect(0,0,W,W);
+    // mass-based coloring
+    let mx=1;
+    const mm=new Map();
+    for(const [cid,sites] of st.clusters){
+      mm.set(cid, sites.length);
+      if(sites.length>mx) mx=sites.length;
+    }
+    const logMax=Math.log(mx+1);
+    for(let xi=0;xi<S;xi++) for(let yi=0;yi<S;yi++){
+      const id=st.grid[xi*S+yi];
+      if(id>=0){
+        const mass=mm.get(id)||1;
+        const t=Math.pow(Math.log(mass+1)/logMax, 0.5);
+        // plasma-ish palette with hue shift per cluster
+        const r=Math.min(255, t*2.5*255)|0;
+        const g=Math.max(0, Math.sin(t*Math.PI)*0.8*255)|0;
+        const b=Math.max(0, (1-t*1.8)*255)|0;
+        // golden angle hue shift
+        const hShift = (id * 0.1618) % 1;
+        const rr = Math.min(255, r + (hShift*60-30))|0;
+        const gg = Math.min(255, Math.max(0, g + (hShift*40-20)))|0;
+        const bb = Math.min(255, Math.max(0, b + ((1-hShift)*30-15)))|0;
+        ctx.fillStyle = `rgb(${rr},${gg},${bb})`;
+        ctx.fillRect(yi*cs, xi*cs, cs-0.5, cs-0.5);
+      }
+    }
+  }
+
+  // === EPOCH LOGIC ===
+  let epAlpha = 3, epP = 1.0, epL = 35;
+  let epState = null, epRunning = false, epAnimId = null;
+  let snapshots = [null, null, null]; // ImageData for 3 epochs
+  let snapshotMeta = [{},{},{}];
+  let selectedFrame = -1;
+
+  const canvases = [
+    document.getElementById("ep-c0"),
+    document.getElementById("ep-c1"),
+    document.getElementById("ep-c2")
+  ];
+  const labels = [
+    document.getElementById("ep-l0"),
+    document.getElementById("ep-l1"),
+    document.getElementById("ep-l2")
+  ];
+  const descEl = document.getElementById("ep-desc");
+
+  // Epoch thresholds: fraction of clusters remaining
+  // Early: ~70% clusters gone, Mid: ~90% gone, Late: ~98% gone
+  const EPOCH_FRACS = [0.3, 0.10, 0.02];
+  const EPOCH_NAMES = ["Early", "Mid", "Late"];
+
+  function captureSnapshot(idx){
+    drawState(epState, canvases[idx]);
+    snapshotMeta[idx] = {
+      time: epState.time.toFixed(2),
+      clusters: epState.clusters.size,
+      steps: epState.steps
+    };
+    labels[idx].textContent = `${EPOCH_NAMES[idx]} · t=${snapshotMeta[idx].time}`;
+  }
+
+  function epInit(){
+    epStop();
+    epState = createState(epP, epAlpha, epL);
+    snapshots = [null, null, null];
+    snapshotMeta = [{},{},{}];
+    selectedFrame = -1;
+    for(let i=0;i<3;i++){
+      const ctx=canvases[i].getContext("2d");
+      canvases[i].width=240; canvases[i].height=240;
+      ctx.fillStyle="#0a0a12"; ctx.fillRect(0,0,240,240);
+      ctx.fillStyle="#3a3a40"; ctx.font="13px 'IBM Plex Mono'";
+      ctx.textAlign="center"; ctx.fillText(EPOCH_NAMES[i], 120, 125);
+      labels[i].textContent = EPOCH_NAMES[i];
+      canvases[i].classList.remove("selected");
+    }
+    descEl.innerHTML = 'Press <span class="val">Run</span> to simulate gridlock formation.';
+  }
+
+  function epStop(){
+    epRunning=false;
+    if(epAnimId) cancelAnimationFrame(epAnimId);
+    epAnimId=null;
+    document.getElementById("ep-run").textContent="Run";
+    document.getElementById("ep-run").className="btn-run";
+  }
+
+  // Determine how many steps per frame based on current state
+  function epStepsPerFrame(){
+    if(!epState) return 10;
+    const nCl=epState.clusters.size;
+    const S=2*epState.L+1;
+    const nPart=Math.round(S*S*epP);
+    const frac=nCl/Math.max(nPart,1);
+    // We want the whole run to take ~10-15 seconds
+    const base = Math.max(1, Math.round(nPart * 0.3 / (15*60)));
+    const alphaFactor = 1 + Math.max(epAlpha, 0.1);
+    let spf = Math.round(base * alphaFactor);
+    if(frac > 0.5) spf = Math.round(spf * 3);
+    else if(frac > 0.1) spf = Math.round(spf * 1.5);
+    else if(frac > 0.03) spf = Math.max(1, Math.round(spf * 0.3));
+    else spf = Math.max(1, Math.round(spf * 0.05));
+    return Math.max(1, Math.min(spf, 50000));
+  }
+
+  let nextEpoch = 0;
+  function epTick(){
+    if(!epRunning || !epState || epState.clusters.size<=1){
+      // Capture any remaining snapshots
+      while(nextEpoch < 3){
+        captureSnapshot(nextEpoch);
+        nextEpoch++;
+      }
+      epStop();
+      descEl.innerHTML = 'Simulation complete. Click any frame to inspect.';
+      return;
+    }
+    const n = epStepsPerFrame();
+    const S=2*epState.L+1;
+    const nPart=Math.round(S*S*epP);
+    for(let i=0;i<n && epState.clusters.size>1;i++){
+      step(epState);
+      // Check epoch thresholds
+      if(nextEpoch < 3){
+        const frac = epState.clusters.size / Math.max(nPart,1);
+        if(frac <= EPOCH_FRACS[nextEpoch]){
+          captureSnapshot(nextEpoch);
+          nextEpoch++;
+        }
+      }
+    }
+    // Update description
+    const frac = (epState.clusters.size / Math.max(nPart,1) * 100).toFixed(1);
+    descEl.innerHTML = `t = <span class="val">${epState.time.toFixed(2)}</span> · ` +
+      `<span class="val">${epState.clusters.size}</span> clusters (${frac}%) · ` +
+      `epoch <span class="val">${nextEpoch}/3</span> captured`;
+    epAnimId = requestAnimationFrame(epTick);
+  }
+
+  // === CONTROLS ===
+  document.getElementById("ep-run").addEventListener("click", ()=>{
+    if(epRunning){ epStop(); return; }
+    if(!epState || epState.clusters.size<=1) epInit();
+    epRunning=true;
+    nextEpoch = 0;
+    // Reset snapshots if restarting
+    if(snapshotMeta[0].time !== undefined){
+      epInit();
+      epRunning=true;
+    }
+    nextEpoch = 0;
+    document.getElementById("ep-run").textContent="Pause";
+    document.getElementById("ep-run").className="btn-pause";
+    epAnimId=requestAnimationFrame(epTick);
+  });
+
+  document.getElementById("ep-reset").addEventListener("click", epInit);
+
+  // Alpha pills
+  function setEpAlpha(a, id){
+    epAlpha=a;
+    ["ep-a2","ep-a3","ep-a4","ep-a5"].forEach(x=>document.getElementById(x).classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    epInit();
+  }
+  document.getElementById("ep-a2").addEventListener("click", ()=>setEpAlpha(2,"ep-a2"));
+  document.getElementById("ep-a3").addEventListener("click", ()=>setEpAlpha(3,"ep-a3"));
+  document.getElementById("ep-a4").addEventListener("click", ()=>setEpAlpha(4,"ep-a4"));
+  document.getElementById("ep-a5").addEventListener("click", ()=>setEpAlpha(5,"ep-a5"));
+
+  // Density pills
+  function setEpP(p, id){
+    epP=p;
+    ["ep-p05","ep-p1"].forEach(x=>document.getElementById(x).classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    epInit();
+  }
+  document.getElementById("ep-p05").addEventListener("click", ()=>setEpP(0.5,"ep-p05"));
+  document.getElementById("ep-p1").addEventListener("click", ()=>setEpP(1.0,"ep-p1"));
+
+  // Click to enlarge frame
+  for(let i=0;i<3;i++){
+    canvases[i].addEventListener("click", ()=>{
+      if(!snapshotMeta[i].time) return;
+      // Toggle selection
+      if(selectedFrame === i){
+        selectedFrame = -1;
+        canvases[i].classList.remove("selected");
+        canvases[i].style.width=""; canvases[i].style.height="";
+        descEl.innerHTML = 'Click any frame to inspect.';
+      } else {
+        for(let j=0;j<3;j++){
+          canvases[j].classList.remove("selected");
+          canvases[j].style.width=""; canvases[j].style.height="";
+        }
+        selectedFrame = i;
+        canvases[i].classList.add("selected");
+        const m = snapshotMeta[i];
+        descEl.innerHTML = `<span class="val">${EPOCH_NAMES[i]}</span> epoch: ` +
+          `t = ${m.time}, ${m.clusters} clusters remaining`;
+      }
+    });
+  }
+
+  epInit();
+})();
+</script>
+
+</body>
+</html>

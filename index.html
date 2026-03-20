@@ -94,9 +94,29 @@
     h1 { font-size: 24px; }
     .sim-controls { gap: 14px; }
   }
+  /* Navigation */
+  nav { position: sticky; top: 0; z-index: 100; background: rgba(15,15,18,0.92);
+    backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+    padding: 12px 24px; font-family: var(--mono); font-size: 13px; }
+  nav .nav-inner { max-width: 820px; margin: 0 auto; display: flex;
+    align-items: center; gap: 24px; flex-wrap: wrap; }
+  nav a { color: var(--text-dim); text-decoration: none; transition: color 0.15s; }
+  nav a:hover, nav a.active { color: var(--accent); }
+  nav .nav-title { color: var(--text-bright); font-weight: 500; margin-right: auto; }
 </style>
 </head>
 <body>
+<nav>
+  <div class="nav-inner">
+    <span class="nav-title">CCA on ℤ²</span>
+    <a href="index.html" class="active">Simulation</a>
+    <a href="gridlock.html">Gridlock</a>
+    <a href="exponential.html">Exponential regime</a>
+    <a href="nonexplosion.html">Nonexplosion</a>
+    <a href="ergodicity.html">Ergodicity</a>
+    <a href="directions.html">Open problems</a>
+  </div>
+</nav>
 <div class="container">
 
 <h1>Cluster-Cluster Aggregation on ℤ²</h1>
@@ -156,6 +176,19 @@
     <button id="btn-run" class="btn-run">Run</button>
     <button id="btn-step" class="btn-other">Step</button>
     <button id="btn-reset" class="btn-other">Reset</button>
+  </div>
+  <div class="sim-controls" style="margin-bottom:8px">
+    <div class="ctrl">
+      <label>presets</label>
+      <div class="pill-group" style="flex-wrap:wrap;justify-content:center;gap:3px">
+        <button class="pill" id="pre-hd-exp" title="p=0.8, α=−2.5">dense explosive</button>
+        <button class="pill" id="pre-hd-slow" title="p=0.8, α=1">dense slow</button>
+        <button class="pill" id="pre-sp-exp" title="p=0.1, α=−2.5">sparse explosive</button>
+        <button class="pill" id="pre-sp-slow" title="p=0.1, α=1">sparse slow</button>
+        <button class="pill" id="pre-pc-exp" title="p=0.5, α=−2.5">perc. explosive</button>
+        <button class="pill" id="pre-pc-slow" title="p=0.5, α=1">perc. slow</button>
+      </div>
+    </div>
   </div>
   <div class="sim-controls">
     <div class="ctrl">
@@ -303,7 +336,7 @@
   determined.
 </p>
 
-<h2>Limiting Regime: α → −2</h2>
+<h2>Limiting Regime: α → −∞</h2>
 <p>
   For strongly negative <span class="math">α</span>, a single dominant cluster moves
   so fast relative to all others that the process effectively reduces to one cluster
@@ -316,7 +349,7 @@
   dominant cluster grows by filling its neighbors — resembling the
   <em>Eden model</em>, which produces roughly circular, compact clusters.
   At <strong>moderate <span class="math">p</span></strong>, the cluster explores a random
-  subgraph of occupied sites — potentially resembling <em>percolation cluster exploration</em>,
+  subgraph of occupied sites — resembling <em>percolation cluster exploration</em>,
   where the geometry is governed by the connectivity threshold.
   At <strong>low <span class="math">p</span></strong>, particles are so sparse that the
   cluster must wander significantly between absorptions — resembling
@@ -406,10 +439,14 @@ function hslToRgb(h,s,l){
   else if(h<240){r=0;g=x;b=c}else if(h<300){r=x;g=0;b=c}else{r=c;g=0;b=x}
   return `rgb(${Math.round((r+m)*255)},${Math.round((g+m)*255)},${Math.round((b+m)*255)})`;
 }
-function idToColor(id){
-  if(id<0)return"#f8f7f4";
-  return hslToRgb((id*137.508)%360,0.55+(id*73%30)/100,0.42+(id*53%20)/100);
-}
+
+// Palette functions (shared with second sim)
+const CCA_PALS = {
+  plasma:{bg:"#0a0a12",fn:t=>{const r=Math.min(255,t*2.5*255)|0,g=Math.max(0,Math.sin(t*Math.PI)*0.8*255)|0,b=Math.max(0,(1-t*1.8)*255)|0;return`rgb(${r},${g},${b})`;}},
+  arctic:{bg:"#060d18",fn:t=>`rgb(${40+80*t|0},${140+100*t|0},${200+55*Math.min(1,t*1.2)|0})`},
+  ember:{bg:"#100804",fn:t=>`rgb(${200+55*t|0},${60+140*t*t|0},${10+30*t|0})`},
+  moss:{bg:"#040d08",fn:t=>`rgb(${30+90*t|0},${120+135*t|0},${50+80*t*t|0})`},
+};
 
 // ── Lattice ──
 const SQ_DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
@@ -517,13 +554,67 @@ function step(st){
 }
 
 // ── Draw ──
+function getMassMap(){
+  const mm=new Map();let mx=1;
+  for(const[cid,sites]of state.clusters){mm.set(cid,sites.length);if(sites.length>mx)mx=sites.length;}
+  return{mm,mx};
+}
+// Shift a palette color by cluster ID to distinguish neighbors of similar mass.
+// Parse the rgb string, rotate hue, adjust lightness slightly.
+function shiftColor(rgbStr, id){
+  const m=rgbStr.match(/\d+/g);
+  if(!m)return rgbStr;
+  let r=+m[0],g=+m[1],b=+m[2];
+  // Convert to HSL, shift hue by golden-angle hash of id, tweak lightness
+  const rf=r/255,gf=g/255,bf=b/255;
+  const max=Math.max(rf,gf,bf),min=Math.min(rf,gf,bf);
+  let h=0,s=0,l=(max+min)/2;
+  if(max!==min){
+    const d=max-min;
+    s=l>0.5?d/(2-max-min):d/(max+min);
+    if(max===rf)h=((gf-bf)/d+(gf<bf?6:0))/6;
+    else if(max===gf)h=((bf-rf)/d+2)/6;
+    else h=((rf-gf)/d+4)/6;
+  }
+  // Golden angle offset for hue, small lightness jitter
+  h=(h+(id*0.1618)%1)%1;
+  l=Math.max(0.08,Math.min(0.92, l+((id*137%60)-30)/255));
+  // HSL back to RGB
+  const c2=(1-Math.abs(2*l-1))*s;
+  const x2=c2*(1-Math.abs((h*6)%2-1));
+  const m2=l-c2/2;
+  let rr,gg,bb;
+  const hi=h*6;
+  if(hi<1){rr=c2;gg=x2;bb=0;}else if(hi<2){rr=x2;gg=c2;bb=0;}
+  else if(hi<3){rr=0;gg=c2;bb=x2;}else if(hi<4){rr=0;gg=x2;bb=c2;}
+  else if(hi<5){rr=x2;gg=0;bb=c2;}else{rr=c2;gg=0;bb=x2;}
+  return`rgb(${(rr+m2)*255+0.5|0},${(gg+m2)*255+0.5|0},${(bb+m2)*255+0.5|0})`;
+}
+
+function clusterColor(id, mass, logMax, pal){
+  // Power curve: small clusters much dimmer, big clusters much brighter
+  const tLinear=Math.log(mass+1)/logMax;
+  const t=Math.pow(tLinear, 0.5); // sqrt pushes small values lower, big values higher
+  const base=pal.fn(t);
+  return shiftColor(base, id);
+}
+
 function drawSquare(){
   const S=2*state.L+1,cs=Math.max(Math.floor(CANVAS_PX/S),2),W=S*cs;
+  const pal=CCA_PALS.plasma;
   canvas.width=W;canvas.height=W;
-  ctx.fillStyle="#f8f7f4";ctx.fillRect(0,0,W,W);
+  ctx.fillStyle=pal.bg;ctx.fillRect(0,0,W,W);
+  const{mm,mx}=getMassMap();
+  const logMax=Math.log(mx+1);
+  // Pre-compute color per cluster
+  const colorCache=new Map();
+  for(const[cid,mass]of mm){colorCache.set(cid,clusterColor(cid,mass,logMax,pal));}
   for(let xi=0;xi<S;xi++)for(let yi=0;yi<S;yi++){
     const id=state.grid[xi*S+yi];
-    if(id>=0){ctx.fillStyle=idToColor(id);ctx.fillRect(yi*cs,xi*cs,cs-0.5,cs-0.5);}
+    if(id>=0){
+      ctx.fillStyle=colorCache.get(id);
+      ctx.fillRect(yi*cs,xi*cs,cs-0.5,cs-0.5);
+    }
   }
 }
 function drawHex(){
@@ -532,17 +623,24 @@ function drawHex(){
   const sizeByW=CANVAS_PX/(sqrt3*(S+1));
   const sizeByH=CANVAS_PX/(1.5*S+0.5);
   const size=Math.min(sizeByW,sizeByH)*0.95;
+  const pal=CCA_PALS.plasma;
   const W=CANVAS_PX,H=Math.ceil(1.5*S*size+size);
   canvas.width=W;canvas.height=H;
-  ctx.fillStyle="#f8f7f4";ctx.fillRect(0,0,W,H);
-
+  ctx.fillStyle=pal.bg;ctx.fillRect(0,0,W,H);
+  const{mm,mx}=getMassMap();
+  const logMax=Math.log(mx+1);
+  const colorCache=new Map();
+  for(const[cid,mass]of mm){colorCache.set(cid,clusterColor(cid,mass,logMax,pal));}
   const cx=W/2,cy=H/2;
   for(let qi=-L;qi<=L;qi++)for(let ri=-L;ri<=L;ri++){
     const idx=(qi+L)*S+(ri+L);
     const id=state.grid[idx];
     const px=cx+size*sqrt3*(qi+ri*0.5);
     const py=cy+size*1.5*ri;
-    if(id>=0){ctx.fillStyle=idToColor(id);drawHexCell(px,py,size*0.92);}
+    if(id>=0){
+      ctx.fillStyle=colorCache.get(id);
+      drawHexCell(px,py,size*0.92);
+    }
   }
 }
 function drawHexCell(cx,cy,size){
@@ -587,10 +685,36 @@ function getStepsPerFrame(){
   const tot=nPart*spp,frames=targetSeconds*60;
   let base=Math.max(1,Math.round(tot/frames));
   const frac=nCl/Math.max(nPart,1);
-  if(frac>0.5)base=Math.round(base*2);
-  else if(frac>0.1)base=base;
-  else if(frac>0.03)base=Math.max(1,Math.round(base*0.3));
-  else base=Math.max(1,Math.round(base*0.1));
+  // Phase-based pacing:
+  // Early (>50%): fast, just singletons
+  // Mid (10-50%): interesting phase with many similarly-sized clusters
+  // Late (3-10%): big clusters, interesting structure
+  // Final (<3%): very slow
+  const highAlphaDense = al > 2 && paramP > 0.2;
+  if(frac>0.5) base=Math.round(base*2);
+  else if(frac>0.1){
+    if(highAlphaDense) base=Math.max(1,Math.round(base*0.15));
+    else if(al > 2) base=Math.max(1,Math.round(base*0.4));
+    else if(al > 1) base=Math.max(1,Math.round(base*0.6));
+    else base=Math.max(1,Math.round(base*0.8));
+  }
+  else if(frac>0.05){
+    if(highAlphaDense) base=Math.max(1,Math.round(base*0.05));
+    else base=Math.max(1,Math.round(base*0.15));
+  }
+  else if(frac>0.03){
+    if(highAlphaDense) base=Math.max(1,Math.round(base*0.02));
+    else base=Math.max(1,Math.round(base*0.08));
+  }
+  else if(frac>0.01){
+    if(al>0) base=Math.max(1,Math.round(base*0.02));
+    else base=Math.max(1,Math.round(base*0.05));
+  }
+  else{
+    // <1% clusters: crawl for alpha>0
+    if(al>0) base=Math.max(1,Math.round(base*0.008));
+    else base=Math.max(1,Math.round(base*0.03));
+  }
   if(nCl>1){
     let mx=0;for(const[,s]of state.clusters)if(s.length>mx)mx=s.length;
     const mxR=Math.pow(Math.max(mx,1),-al);
@@ -668,6 +792,35 @@ document.getElementById("btn-step").addEventListener("click",()=>{
 });
 document.getElementById("btn-reset").addEventListener("click",init);
 document.getElementById("cb-rotate").addEventListener("change",e=>{paramRotate=e.target.checked;});
+
+// Presets
+const PRESETS = {
+  "pre-hd-exp":  {alpha:-2.5, p:0.8, L:60, label:"dense explosive"},
+  "pre-hd-slow": {alpha:1.0,  p:0.8, L:60, label:"dense slow"},
+  "pre-sp-exp":  {alpha:-2.5, p:0.1, L:60, label:"sparse explosive"},
+  "pre-sp-slow": {alpha:1.0,  p:0.1, L:60, label:"sparse slow"},
+  "pre-pc-exp":  {alpha:-2.5, p:0.5, L:60, label:"perc. explosive"},
+  "pre-pc-slow": {alpha:1.0,  p:0.5, L:60, label:"perc. slow"},
+};
+function applyPreset(id){
+  const pr=PRESETS[id];if(!pr)return;
+  paramAlpha=pr.alpha; paramP=pr.p; paramL=pr.L;
+  // Update sliders and inputs
+  document.getElementById("sl-alpha").value=pr.alpha;
+  document.getElementById("in-alpha").value=pr.alpha.toFixed(1);
+  document.getElementById("sl-p").value=pr.p;
+  document.getElementById("in-p").value=pr.p.toFixed(2);
+  document.getElementById("sl-L").value=pr.L;
+  document.getElementById("in-L").value=pr.L;
+  document.getElementById("warn-L").style.display=pr.L>60?"block":"none";
+  // Highlight active preset
+  Object.keys(PRESETS).forEach(k=>document.getElementById(k).classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  init();
+}
+Object.keys(PRESETS).forEach(id=>{
+  document.getElementById(id).addEventListener("click",()=>applyPreset(id));
+});
 
 init();
 

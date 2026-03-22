@@ -15,14 +15,42 @@
   .container{max-width:820px;margin:0 auto;padding:48px 24px 80px}h1{font-size:30px;font-weight:600;color:var(--text-bright);margin-bottom:6px}.byline{font-size:13px;color:var(--text-dim);margin-bottom:40px;font-family:var(--mono)}p{margin-bottom:14px}
   .wip{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:32px;text-align:center;margin-top:32px}.wip-icon{font-size:32px;margin-bottom:12px}.wip-text{font-family:var(--mono);font-size:14px;color:var(--text-dim)}
   .back-link{font-family:var(--mono);font-size:13px;color:var(--text-dim);text-decoration:none;display:inline-block;margin-top:48px}.back-link:hover{color:var(--accent)}
+  nav { position: sticky; top: 0; z-index: 100; background: rgba(15,15,18,0.95);
+    backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+    padding: 10px 24px 8px; font-family: var(--mono); font-size: 12px; }
+  nav .nav-inner { max-width: 860px; margin: 0 auto; }
+  nav .nav-top { display: flex; align-items: center; margin-bottom: 6px; }
+  nav .nav-title { color: var(--text-bright); font-weight: 500; font-size: 14px; }
+  nav .nav-groups { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  nav .nav-group { display: flex; align-items: center; gap: 4px; }
+  nav .nav-group-label { color: var(--text-dim); font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.06em; margin-right: 2px; opacity: 0.7; }
+  nav .nav-sep { color: var(--border); margin: 0 6px; font-size: 14px; user-select: none; }
+  nav a { color: var(--text-dim); text-decoration: none; transition: color 0.15s;
+    padding: 2px 6px; border-radius: 3px; }
+  nav a:hover { color: var(--accent); }
+  nav a.active { color: var(--accent); background: rgba(139,164,184,0.1); }
 </style>
 </head>
 <body>
-<nav><div class="nav-inner"><span class="nav-title">CCA on ℤ²</span>
-<a href="index.html">Simulation</a><a href="gridlock.html">Gridlock</a>
-<a href="explosive.html">Explosive regime</a><a href="nonexplosion.html" class="active">Nonexplosion</a>
-<a href="ergodicity.html" >Ergodicity</a><a href="directions.html" >Open problems</a>
-</div></nav>
+<nav>
+<div class="nav-inner">
+<div class="nav-top"><span class="nav-title">CCA on ℤ²</span></div>
+<div class="nav-groups">
+<div class="nav-group"><a href="index.html">Simulation</a></div>
+<span class="nav-sep">|</span>
+<div class="nav-group"><span class="nav-group-label">Analysis</span>
+<a href="gridlock.html">Gridlock</a>
+<a href="exponential.html">Exp. regime</a>
+<a href="nonexplosion.html" class="active">Nonexplosion</a>
+</div>
+<span class="nav-sep">|</span>
+<div class="nav-group"><span class="nav-group-label">Geometry</span>
+<a href="explosive.html">Explosive</a>
+<a href="ergodicity.html">Ergodicity</a>
+<a href="directions.html">Open problems</a>
+</div>
+</div></div></nav>
 <div class="container">
 <h1>Nonexplosion for α ≥ 0</h1>
 <p class="byline">Noam Borgnia · TU Munich, 2026</p>

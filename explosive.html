@@ -130,12 +130,16 @@
 <!-- ═══════════════════════════════════════════════════ -->
 <h2>Low density → DLA</h2>
 <p>
-  When particles are sparse, the dominant cluster must diffuse a long distance between
-  absorptions. Approaching particles are more likely to contact the outermost tips of
-  the cluster (since those are the first sites a random walker encounters), producing
-  highly ramified growth. This is the same mechanism underlying
-  <em>diffusion-limited aggregation</em> (DLA), where particles arrive from infinity
-  and stick on contact.
+  When particles are sparse, the dominant cluster must diffuse between
+  absorptions, and approaching particles are more likely to contact the outermost
+  tips of the cluster, producing ramified growth reminiscent of
+  <em>diffusion-limited aggregation</em> (DLA). The correspondence becomes exact
+  in the limit p → 0: each absorption adds a single particle after a long
+  diffusion, the direction of approach is fully randomized, and the cluster's
+  rigid-body random walk is equivalent to a particle arriving from infinity.
+  At moderate p = 0.15 the geometry is qualitatively similar but not identical
+  to DLA, since the cluster doesn't travel far enough between absorptions
+  for each encounter to look truly independent.
 </p>
 
 <div class="pair-panel" id="panel-0">
@@ -162,10 +166,10 @@
     </div>
     <div class="ctrl"><label>grid</label>
       <div class="pill-group">
-        <button class="pill pp-gs" data-panel="0" data-gs="49">49²</button>
         <button class="pill pp-gs" data-panel="0" data-gs="79">79²</button>
         <button class="pill active pp-gs" data-panel="0" data-gs="99">99²</button>
         <button class="pill pp-gs" data-panel="0" data-gs="129">129²</button>
+        <button class="pill pp-gs" data-panel="0" data-gs="159">159²</button>
       </div>
     </div>
   </div>
@@ -178,8 +182,9 @@
   the dominant cluster effectively explores a random subgraph of occupied sites.
   It can only absorb a neighbor if that site is occupied, so the resulting
   geometry is governed by the connectivity structure of the underlying Bernoulli
-  site percolation configuration. The cluster traces out something resembling the
-  explored region of a percolation cluster.
+  site percolation configuration. As with the Eden comparison, we use
+  edge-weighted exploration: boundary sites with more cluster neighbors are
+  proportionally more likely to be absorbed, matching the CCA translation mechanic.
 </p>
 
 <div class="pair-panel" id="panel-1">
@@ -191,7 +196,7 @@
     <div class="pair-arrow">↔</div>
     <div class="pair-cell">
       <canvas id="cls-1" width="300" height="300"></canvas>
-      <div class="cell-label">Percolation p=0.63 · <span class="val" id="cls-n1">0</span> sites</div>
+      <div class="cell-label">Percolation p=0.63 (edge-weighted) · <span class="val" id="cls-n1">0</span> sites</div>
     </div>
   </div>
   <div class="pair-controls">
@@ -219,9 +224,13 @@
 <h2>Full density → Eden model</h2>
 <p>
   At p = 1, every neighbor of the dominant cluster is occupied, so the cluster
-  grows by absorbing a uniformly random boundary site at each step. This is precisely
-  the <em>Eden model</em> of uniform random boundary growth, which produces compact,
-  roughly circular clusters with a smooth boundary (up to KPZ-class fluctuations).
+  grows by absorbing boundary sites. In the CCA dynamics, a boundary site adjacent
+  to the cluster from multiple directions has proportionally more chances of being
+  hit by a translation step — so the natural comparison is the <em>edge-weighted
+  Eden model</em> (sometimes called bond FPP), where each boundary site is selected
+  with probability proportional to its number of cluster neighbors. This produces
+  compact, roughly circular clusters with a smooth boundary (up to KPZ-class
+  fluctuations).
 </p>
 
 <div class="pair-panel" id="panel-2">
@@ -233,7 +242,7 @@
     <div class="pair-arrow">↔</div>
     <div class="pair-cell">
       <canvas id="cls-2" width="300" height="300"></canvas>
-      <div class="cell-label">Eden · <span class="val" id="cls-n2">0</span> sites</div>
+      <div class="cell-label">Eden (edge-weighted) · <span class="val" id="cls-n2">0</span> sites</div>
     </div>
   </div>
   <div class="pair-controls">
@@ -327,23 +336,55 @@
 
   function ccaSeedSize(st){const s=st.clusters.get(st.seedId);return s?s.length:0;}
 
-  function drawCCA(st,canvas,p){
-    const ctx=canvas.getContext("2d"),S=2*st.L+1;
+  // Get bounding box of seed cluster sites
+  function seedBBox(st){
+    const sites=st.clusters.get(st.seedId);
+    if(!sites||!sites.length) return {xmin:0,xmax:0,ymin:0,ymax:0};
+    let xmin=Infinity,xmax=-Infinity,ymin=Infinity,ymax=-Infinity;
+    for(const s of sites){
+      if(s.x<xmin)xmin=s.x;if(s.x>xmax)xmax=s.x;
+      if(s.y<ymin)ymin=s.y;if(s.y>ymax)ymax=s.y;
+    }
+    return {xmin,xmax,ymin,ymax};
+  }
+
+  function drawCCA(st,canvas,p,zoomed){
+    const ctx=canvas.getContext("2d");
     const sz=300;
     canvas.width=sz;canvas.height=sz;
-    const cell=sz/S;
-    ctx.fillStyle=p.bg;ctx.fillRect(0,0,sz,sz);
+    const S=2*st.L+1;
     const seedId=st.seedId,jo=st.joinOrder,maxOrd=Math.max(st.mergeCount,1);
     const seedSites=st.clusters.get(seedId),joByGrid=new Map();
     if(seedSites){for(let i=0;i<seedSites.length;i++){
       const s=seedSites[i];joByGrid.set((s.x+st.L)*S+(s.y+st.L),jo[i]!==undefined?jo[i]:0);
     }}
-    for(let xi=0;xi<S;xi++)for(let yi=0;yi<S;yi++){
+
+    // Determine viewport
+    let vxMin=0, vyMin=0, vSize=S; // default: full grid
+    if(zoomed && seedSites && seedSites.length>1){
+      const bb=seedBBox(st);
+      const w=bb.xmax-bb.xmin+1, h=bb.ymax-bb.ymin+1;
+      const pad=Math.max(3, Math.round(Math.max(w,h)*0.15));
+      const side=Math.max(w,h)+2*pad;
+      const cx=(bb.xmin+bb.xmax)/2, cy=(bb.ymin+bb.ymax)/2;
+      // Convert to grid coords (offset by L)
+      vxMin=Math.max(0, Math.round(cx+st.L-side/2));
+      vyMin=Math.max(0, Math.round(cy+st.L-side/2));
+      vSize=Math.min(side, S-Math.max(vxMin,vyMin));
+      if(vxMin+vSize>S) vxMin=S-vSize;
+      if(vyMin+vSize>S) vyMin=S-vSize;
+      vSize=Math.max(vSize,1);
+    }
+
+    const cell=sz/vSize;
+    ctx.fillStyle=p.bg;ctx.fillRect(0,0,sz,sz);
+    for(let xi=vxMin;xi<vxMin+vSize;xi++)for(let yi=vyMin;yi<vyMin+vSize;yi++){
+      if(xi<0||xi>=S||yi<0||yi>=S)continue;
       const id=st.grid[xi*S+yi];
       if(id>=0){
         if(id===seedId){ctx.fillStyle=p.fn((joByGrid.get(xi*S+yi)||0)/maxOrd);}
         else ctx.fillStyle="rgb(65,60,55)";
-        ctx.fillRect(yi*cell,xi*cell,cell+0.5,cell+0.5);
+        ctx.fillRect((yi-vyMin)*cell,(xi-vxMin)*cell,cell+0.5,cell+0.5);
       }
     }
   }
@@ -387,7 +428,20 @@
 
   function clsStepEden(st){
     const{occ,bnd,tm,gs}=st;if(!bnd.size)return false;
-    const pick=Array.from(bnd)[Math.random()*bnd.size|0];
+    // Eden model A: pick a random edge between cluster and complement.
+    // A boundary site with k cluster neighbors has k times the weight.
+    // Build weighted list of (boundary site, weight).
+    const weights=[];let total=0;
+    for(const k of bnd){
+      const[px,py]=k.split(",").map(Number);
+      let w=0;
+      for(const[nx,ny]of nbrs(px,py,gs)){if(occ.has(`${nx},${ny}`))w++;}
+      weights.push({k,w});total+=w;
+    }
+    // Weighted pick
+    let r=Math.random()*total;
+    let pick=weights[0].k;
+    for(const{k,w}of weights){r-=w;if(r<=0){pick=k;break;}}
     bnd.delete(pick);occ.add(pick);tm.set(pick,st.step+1);
     const[px,py]=pick.split(",").map(Number);
     for(const[nx,ny]of nbrs(px,py,gs)){const nk=`${nx},${ny}`;if(!occ.has(nk))bnd.add(nk);}
@@ -412,7 +466,17 @@
   }
   function clsStepPerc(st){
     const{occ,bnd,tm,open,gs}=st;if(!bnd.size)return false;
-    const pick=Array.from(bnd)[Math.random()*bnd.size|0];
+    // Edge-weighted: boundary sites with more cluster neighbors are more likely
+    const weights=[];let total=0;
+    for(const k of bnd){
+      const[px,py]=k.split(",").map(Number);
+      let w=0;
+      for(const[nx,ny]of nbrs(px,py,gs)){if(occ.has(`${nx},${ny}`))w++;}
+      weights.push({k,w});total+=w;
+    }
+    let r=Math.random()*total;
+    let pick=weights[0].k;
+    for(const{k,w}of weights){r-=w;if(r<=0){pick=k;break;}}
     bnd.delete(pick);occ.add(pick);tm.set(pick,st.step+1);
     const[px,py]=pick.split(",").map(Number);
     for(const[nx,ny]of nbrs(px,py,gs)){const nk=`${nx},${ny}`;if(!occ.has(nk)&&!bnd.has(nk)&&open.has(nk))bnd.add(nk);}
@@ -424,17 +488,53 @@
     return clsStepEden(st);
   }
 
-  function drawCls(st,canvas,p){
-    const ctx=canvas.getContext("2d"),gs=st.gs,sz=canvas.width,cell=sz/gs;
+  function drawCls(st,canvas,p,zoomed){
+    const ctx=canvas.getContext("2d"),gs=st.gs,sz=300;
+    canvas.width=sz;canvas.height=sz;
     ctx.fillStyle=p.bg;ctx.fillRect(0,0,sz,sz);
     const ms=Math.max(st.step,1);
-    for(const k of st.occ){const[a,b]=k.split(",").map(Number);ctx.fillStyle=p.fn((st.tm.get(k)||0)/ms);ctx.fillRect(a*cell,b*cell,cell+0.5,cell+0.5);}
-    if(st.model==="dla"){
-      const cx=gs>>1,cy=gs>>1,lr=st.maxR+5;
-      ctx.beginPath();ctx.arc(cx*cell+cell/2,cy*cell+cell/2,lr*cell,0,Math.PI*2);
-      ctx.strokeStyle="rgba(255,255,255,0.08)";ctx.lineWidth=1;ctx.setLineDash([4,6]);ctx.stroke();ctx.setLineDash([]);
-    }else{
-      ctx.globalAlpha=0.3;for(const k of st.bnd){const[a,b]=k.split(",").map(Number);ctx.fillStyle="#fff";ctx.fillRect(a*cell,b*cell,cell+0.5,cell+0.5);}ctx.globalAlpha=1;
+
+    // Determine viewport
+    let vxMin=0,vyMin=0,vSize=gs;
+    if(zoomed && st.occ.size>1){
+      let xmin=Infinity,xmax=-Infinity,ymin=Infinity,ymax=-Infinity;
+      for(const k of st.occ){
+        const[a,b]=k.split(",").map(Number);
+        if(a<xmin)xmin=a;if(a>xmax)xmax=a;
+        if(b<ymin)ymin=b;if(b>ymax)ymax=b;
+      }
+      const w=xmax-xmin+1, h=ymax-ymin+1;
+      const pad=Math.max(3, Math.round(Math.max(w,h)*0.15));
+      const side=Math.max(w,h)+2*pad;
+      vxMin=Math.max(0, Math.round((xmin+xmax)/2-side/2));
+      vyMin=Math.max(0, Math.round((ymin+ymax)/2-side/2));
+      vSize=Math.min(side, gs);
+      if(vxMin+vSize>gs)vxMin=gs-vSize;
+      if(vyMin+vSize>gs)vyMin=gs-vSize;
+      vSize=Math.max(vSize,1);
+    }
+
+    const cell=sz/vSize;
+    for(const k of st.occ){
+      const[a,b]=k.split(",").map(Number);
+      if(a>=vxMin&&a<vxMin+vSize&&b>=vyMin&&b<vyMin+vSize){
+        ctx.fillStyle=p.fn((st.tm.get(k)||0)/ms);
+        ctx.fillRect((a-vxMin)*cell,(b-vyMin)*cell,cell+0.5,cell+0.5);
+      }
+    }
+    if(!zoomed){
+      if(st.model==="dla"){
+        const cx=gs>>1,cy=gs>>1,lr=st.maxR+5;
+        ctx.beginPath();ctx.arc(cx*cell+cell/2,cy*cell+cell/2,lr*cell,0,Math.PI*2);
+        ctx.strokeStyle="rgba(255,255,255,0.08)";ctx.lineWidth=1;ctx.setLineDash([4,6]);ctx.stroke();ctx.setLineDash([]);
+      }else{
+        ctx.globalAlpha=0.3;for(const k of st.bnd){
+          const[a,b]=k.split(",").map(Number);
+          if(a>=vxMin&&a<vxMin+vSize&&b>=vyMin&&b<vyMin+vSize){
+            ctx.fillStyle="#fff";ctx.fillRect((a-vxMin)*cell,(b-vyMin)*cell,cell+0.5,cell+0.5);
+          }
+        }ctx.globalAlpha=1;
+      }
     }
   }
 
@@ -456,7 +556,7 @@
     ccaDone: false, clsDone: false,
     running: false, animId: null,
     pal: PALS.plasma,
-    gs: 99, // grid size (shared for CCA and classical)
+    gs: 99,
   }));
 
   function ccaL(i){return (panels[i].gs-1)/2;} // half-width from grid size
@@ -484,8 +584,8 @@
 
   function redrawPanel(i){
     const pn=panels[i];
-    if(pn.ccaSt)drawCCA(pn.ccaSt,pn.ccaCanvas,pn.pal);
-    if(pn.clsSt)drawCls(pn.clsSt,pn.clsCanvas,pn.pal);
+    if(pn.ccaSt)drawCCA(pn.ccaSt,pn.ccaCanvas,pn.pal,pn.ccaDone);
+    if(pn.clsSt)drawCls(pn.clsSt,pn.clsCanvas,pn.pal,pn.clsDone);
   }
 
   function tickPanel(i){
@@ -509,18 +609,22 @@
           for(let j=0;j<spf&&st.clusters.size>1;j++){ccaStep(st);if(ccaSeedSize(st)>=np*th)break;}
         }
       }
-      drawCCA(st,pn.ccaCanvas,pn.pal);pn.ccaLabel.textContent=ccaSeedSize(st);
+      drawCCA(st,pn.ccaCanvas,pn.pal,pn.ccaDone);pn.ccaLabel.textContent=ccaSeedSize(st);
     }
 
     // Classical side — pace to match CCA, with stopping threshold
     if(!pn.clsDone){
       const st=pn.clsSt;
       const clsMax=Math.round(pn.gs*pn.gs*c.clsThresh);
-      if(st.step>=clsMax||st.occ.size>=clsMax){pn.clsDone=true;}else{
+      const ccaNP=ccaNPart(i);
+      const dlaCap = (st.model==="dla") ? ccaNP : clsMax;
+      const effectiveMax = Math.min(clsMax, dlaCap);
+      if(st.step>=effectiveMax||st.occ.size>=effectiveMax){pn.clsDone=true;}else{
         let ok=true;
         if(st.model==="dla"){
-          // DLA: 1-2 per frame, stop at threshold
-          for(let j=0;j<2&&ok&&st.step<clsMax;j++)ok=clsStep(st);
+          // DLA: scale attempts with grid size since larger grids need longer walks
+          const dlaSpf = Math.max(2, Math.round(pn.gs / 30));
+          for(let j=0;j<dlaSpf&&ok&&st.step<clsMax;j++)ok=clsStep(st);
           if(!ok)pn.clsDone=true;
         }else{
           // Eden/Perc: sync to CCA seed size, clamped to threshold
@@ -531,7 +635,7 @@
         }
         if(!pn.clsDone)allDone=false;
       }
-      drawCls(st,pn.clsCanvas,pn.pal);pn.clsLabel.textContent=st.step;
+      drawCls(st,pn.clsCanvas,pn.pal,pn.clsDone);pn.clsLabel.textContent=st.step;
     }
 
     if(allDone){stopPanel(i);return;}

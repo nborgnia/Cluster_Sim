@@ -3,18 +3,60 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nonexplosion for α ≥ 0 — CCA on ℤ²</title>
+<title>Nonexplosion Proof — CCA on ℤ²</title>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
 <style>
-  :root { --bg:#0f0f12;--surface:#1a1a1e;--border:#2a2a30;--text:#d4d0c8;--text-dim:#7a7770;--text-bright:#f0ede6;--accent:#8ba4b8;--accent-dim:#5a7080;--serif:'Source Serif 4',Georgia,serif;--mono:'IBM Plex Mono','JetBrains Mono',monospace; }
-  *{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:var(--serif);background:var(--bg);color:var(--text);line-height:1.75;font-size:17px}
-  nav{position:sticky;top:0;z-index:100;background:rgba(15,15,18,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:12px 24px;font-family:var(--mono);font-size:13px}nav .nav-inner{max-width:820px;margin:0 auto;display:flex;align-items:center;gap:24px;flex-wrap:wrap}nav a{color:var(--text-dim);text-decoration:none;transition:color 0.15s}nav a:hover,nav a.active{color:var(--accent)}nav .nav-title{color:var(--text-bright);font-weight:500;margin-right:auto}
-  .container{max-width:820px;margin:0 auto;padding:48px 24px 80px}h1{font-size:30px;font-weight:600;color:var(--text-bright);margin-bottom:6px}.byline{font-size:13px;color:var(--text-dim);margin-bottom:40px;font-family:var(--mono)}p{margin-bottom:14px}
-  .wip{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:32px;text-align:center;margin-top:32px}.wip-icon{font-size:32px;margin-bottom:12px}.wip-text{font-family:var(--mono);font-size:14px;color:var(--text-dim)}
-  .back-link{font-family:var(--mono);font-size:13px;color:var(--text-dim);text-decoration:none;display:inline-block;margin-top:48px}.back-link:hover{color:var(--accent)}
+  :root {
+    --bg: #0f0f12; --surface: #1a1a1e; --border: #2a2a30;
+    --text: #d4d0c8; --text-dim: #7a7770; --text-bright: #f0ede6;
+    --accent: #8ba4b8; --accent-dim: #5a7080;
+    --serif: 'Source Serif 4', Georgia, serif;
+    --mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+    --proof-bg: rgba(139,164,184,0.04);
+    --conjecture-border: #8ba4b8;
+    --remark-border: #a89060;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--serif); background: var(--bg); color: var(--text);
+    line-height: 1.75; font-size: 17px; }
+  .container { max-width: 820px; margin: 0 auto; padding: 48px 24px 80px; }
+  h1 { font-size: 30px; font-weight: 600; color: var(--text-bright);
+    letter-spacing: -0.01em; margin-bottom: 6px; }
+  .byline { font-size: 13px; color: var(--text-dim); margin-bottom: 40px;
+    font-family: var(--mono); }
+  .byline a { color: var(--accent-dim); text-decoration: none; }
+  h2 { font-size: 21px; font-weight: 600; color: var(--text-bright);
+    margin: 44px 0 14px; border-bottom: 1px solid var(--border); padding-bottom: 7px; }
+  h3 { font-size: 17px; font-weight: 600; color: var(--accent); margin: 28px 0 10px; }
+  p { margin-bottom: 14px; }
+  em { color: var(--text-bright); }
+  .katex-display { margin: 20px 0 !important; }
+  .katex { font-size: 1.05em; }
+  .env { margin: 24px 0; padding: 16px 20px; border-radius: 0 6px 6px 0;
+    background: var(--proof-bg); }
+  .env-label { font-family: var(--mono); font-size: 13px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+  .env-proposition { border-left: 3px solid var(--accent); }
+  .env-proposition .env-label { color: var(--accent); }
+  .env-remark { border-left: 3px solid var(--remark-border); }
+  .env-remark .env-label { color: var(--remark-border); }
+  .env-proof { border-left: 2px solid var(--border); background: transparent;
+    padding-left: 18px; }
+  .env-proof .env-label { color: var(--text-dim); font-style: italic;
+    text-transform: none; letter-spacing: 0; }
+  .env-proof .qed { text-align: right; color: var(--text-dim); margin-top: 8px; }
+  .back-link { font-family: var(--mono); font-size: 13px; color: var(--text-dim);
+    text-decoration: none; display: inline-block; margin-top: 48px; }
+  .back-link:hover { color: var(--accent); }
+  @media (max-width: 700px) {
+    .container { padding: 32px 16px 60px; }
+    h1 { font-size: 24px; }
+  }
   nav { position: sticky; top: 0; z-index: 100; background: rgba(15,15,18,0.95);
     backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
     padding: 10px 24px 8px; font-family: var(--mono); font-size: 12px; }
@@ -33,6 +75,7 @@
 </style>
 </head>
 <body>
+
 <nav>
 <div class="nav-inner">
 <div class="nav-top"><span class="nav-title">CCA on ℤ²</span></div>
@@ -51,10 +94,248 @@
 <a href="directions.html">Open problems</a>
 </div>
 </div></div></nav>
+
 <div class="container">
-<h1>Nonexplosion for α ≥ 0</h1>
-<p class="byline">Noam Borgnia · TU Munich, 2026</p>
-<p>A writeup of Prof. Berger's proof that no infinite component forms in finite time for $\alpha \geq 0$, along with a discussion of the main obstruction to extending the argument to obtain finite moments of cluster size.</p>
-<div class="wip"><div class="wip-icon">🔧</div><div class="wip-text">This page is under construction. Content coming soon.</div></div>
+
+<h1>Nonexplosion for $\alpha \geq 0$</h1>
+<p class="byline">
+  Based on an unpublished argument of
+  <a href="https://www.professoren.tum.de/en/berger-noam">Prof. Noam Berger</a> (TU Munich, ~2025)
+</p>
+
+<p>
+  The most basic question about the CCA model is whether clusters remain finite: can an
+  infinite connected component form in finite time? For $\alpha \geq 0$, the answer is no.
+  The argument below, due to Berger, establishes this by bounding the total inter-scale
+  mass flux. The proof is carried out at $\alpha = 0$ (the hardest case); the extension to
+  $\alpha > 0$ is immediate, since larger clusters only move slower.
+</p>
+
+<h2>Setup and notation</h2>
+
+<p>
+  We work in dimension $d = 2$ (the argument generalizes). Let $v_k(t)$ denote the
+  <em>density of vertices in clusters of size $k$</em> at time $t$. By the ergodic theorem
+  applied to the shift-invariant initial measure,
+</p>
+$$v_k(t) = \mathbb{P}(\text{the origin belongs to a cluster of size } k \text{ at time } t).$$
+<p>
+  Translation invariance is essential here: it ensures $v_k(t)$ is a deterministic quantity,
+  independent of the realization. Without it, one would need to work on a finite torus and
+  take limits. We have the normalization $\sum_{k=1}^{\infty} v_k(t) = 1$ for all $t$, as
+  long as no infinite component exists.
+</p>
+
+<h2>Smoothed dyadic scales</h2>
+
+<p>
+  We group the densities into exponentially growing size scales. A naive partition
+  $W_n = \sum_{k=2^n+1}^{2^{n+1}} v_k$ creates discontinuities when a cluster crosses a
+  scale boundary. To fix this, we smooth: near each transition point $2^{n+1}$, the weight
+  $w_n(k)$ ramps linearly from $1$ to $0$ over a window of width $2^{n+1}/8$, while
+  $w_{n+1}(k)$ ramps up correspondingly. Precisely:
+</p>
+$$w_n(k) = \begin{cases}
+  \dfrac{k - (2^n - 2^n/8)}{2^n/8} & \text{if } 2^n - \tfrac{2^n}{8} \leq k \leq 2^n, \\[6pt]
+  1 & \text{if } 2^n < k \leq 2^{n+1} - \tfrac{2^{n+1}}{8}, \\[4pt]
+  \dfrac{2^{n+1} - k}{2^{n+1}/8} & \text{if } 2^{n+1} - \tfrac{2^{n+1}}{8} < k \leq 2^{n+1}, \\[6pt]
+  0 & \text{otherwise.}
+\end{cases}$$
+
+<div style="display:flex; justify-content:center; margin: 28px 0;">
+<svg viewBox="0 0 520 220" xmlns="http://www.w3.org/2000/svg" width="520" height="220" style="font-family: 'IBM Plex Mono', monospace;">
+  <!-- Axes -->
+  <line x1="50" y1="160" x2="500" y2="160" stroke="#7a7770" stroke-width="1.5"/>
+  <line x1="50" y1="160" x2="50" y2="20" stroke="#7a7770" stroke-width="1.5"/>
+  <!-- Arrowheads -->
+  <polygon points="500,160 493,156 493,164" fill="#7a7770"/>
+  <polygon points="50,20 46,27 54,27" fill="#7a7770"/>
+  <!-- Axis labels -->
+  <text x="507" y="164" fill="#d4d0c8" font-size="14" font-style="italic">k</text>
+  <text x="28" y="18" fill="#d4d0c8" font-size="13" font-style="italic">ω<tspan baseline-shift="sub" font-size="10">n</tspan>(k)</text>
+  <!-- y=1 tick -->
+  <line x1="46" y1="50" x2="54" y2="50" stroke="#7a7770" stroke-width="1"/>
+  <text x="38" y="54" fill="#d4d0c8" font-size="12" text-anchor="end">1</text>
+  <!-- Trapezoid -->
+  <polyline points="50,160 110,160 140,50 370,50 420,160 500,160"
+    fill="none" stroke="#8ba4b8" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Dashed verticals -->
+  <line x1="140" y1="50" x2="140" y2="160" stroke="#5a7080" stroke-width="1" stroke-dasharray="5,4"/>
+  <line x1="370" y1="50" x2="370" y2="160" stroke="#5a7080" stroke-width="1" stroke-dasharray="5,4"/>
+  <!-- x-axis ticks -->
+  <line x1="140" y1="157" x2="140" y2="163" stroke="#7a7770" stroke-width="1"/>
+  <line x1="370" y1="157" x2="370" y2="163" stroke="#7a7770" stroke-width="1"/>
+  <!-- x-axis labels -->
+  <text x="140" y="178" fill="#d4d0c8" font-size="13" text-anchor="middle">2<tspan baseline-shift="super" font-size="9">n</tspan></text>
+  <text x="370" y="178" fill="#d4d0c8" font-size="13" text-anchor="middle">2<tspan baseline-shift="super" font-size="9">n+1</tspan></text>
+  <!-- Left ramp bracket -->
+  <line x1="110" y1="196" x2="140" y2="196" stroke="#7a7770" stroke-width="1"/>
+  <line x1="110" y1="192" x2="110" y2="200" stroke="#7a7770" stroke-width="1"/>
+  <line x1="140" y1="192" x2="140" y2="200" stroke="#7a7770" stroke-width="1"/>
+  <text x="125" y="212" fill="#d4d0c8" font-size="11" text-anchor="middle">2<tspan baseline-shift="super" font-size="8">n</tspan>/8</text>
+  <!-- Right ramp bracket -->
+  <line x1="370" y1="196" x2="420" y2="196" stroke="#7a7770" stroke-width="1"/>
+  <line x1="370" y1="192" x2="370" y2="200" stroke="#7a7770" stroke-width="1"/>
+  <line x1="420" y1="192" x2="420" y2="200" stroke="#7a7770" stroke-width="1"/>
+  <text x="395" y="212" fill="#d4d0c8" font-size="11" text-anchor="middle">2<tspan baseline-shift="super" font-size="8">n+1</tspan>/8</text>
+</svg>
+</div>
+
+<p>
+  Setting $W_n = \sum_{k=1}^{\infty} w_n(k)\, v_k$, the adjacent ramps satisfy
+  $w_n(k) + w_{n+1}(k) = 1$ in every overlap region, giving the partition of unity
+</p>
+$$\sum_{n=0}^{\infty} W_n = \sum_{k=1}^{\infty} v_k = 1.$$
+
+<h2>Collision rates and the ODE</h2>
+
+<p>
+  A cluster at scale $m$ (size $\sim 2^m$) moves at rate $(2^m)^{-\alpha}$. At $\alpha = 0$
+  this is rate $1$. The number density of scale-$m$ clusters is $W_m / 2^m$ (total mass at
+  that scale divided by mass per cluster). When such a cluster collides with another cluster
+  $C$ at scale $n$, there are three cases:
+</p>
+
+<h3>Case 1: $|C| \ll 2^m$ (small cluster absorbed)</h3>
+<p>
+  $W_m$ increases by at most $2^m$, and some lower scale $W_j$ ($j < m$) loses the
+  corresponding amount. The merger stays within scale $m$.
+</p>
+
+<h3>Case 2: $|C| \approx 2^m$ (same-scale collision)</h3>
+<p>
+  This is generically the most common case. $W_m$ decreases by $\sim 2^m$ (the original
+  cluster leaves) and $W_{m+1}$ increases by the same amount (the merged cluster enters
+  the next scale). The net change is $O(2^m)$.
+</p>
+
+<h3>Case 3: $|C| > 2^{m+1}$ (absorbed into a larger cluster)</h3>
+<p>
+  $W_m$ loses $\sim 2^m$. The cluster at scale $n > m$ gains $\sim 2^m$ in mass, which
+  may push $W_n$ into $W_{n+1}$ at most (by the gradual scale separation — a cluster at
+  scale $n$ absorbing something of size $2^m \ll 2^n$ only changes scale by an amount
+  $\sim 2^m / 2^n \ll 1$).
+</p>
+<p>
+  Define the collision distribution
+  $a_n^{(m)}(t) := \mathbb{P}(\text{collision partner is at scale } n \mid \text{cluster at scale } m \text{ collides})$.
+  Since every collision hits either a finite-scale cluster or (potentially) an infinite component:
+</p>
+$$\sum_{n=0}^{\infty} a_n^{(m)} \leq 1 \qquad \text{for all } m, t.$$
+<p>
+  The inequality is strict if and only if there is positive probability of colliding
+  with an infinite component — which is precisely what we want to rule out.
+</p>
+
+<h2>The absolute flux bound</h2>
+
+<p>
+  Define the inter-scale mass flux
+  $\lambda_{m,n} := $ rate of net mass transfer from scale $m$ to scale $n$.
+  For $n > m$:
+</p>
+$$|\lambda_{m,n}| \leq a_n^{(m)} \cdot W_m + a_m^{(n)} \cdot W_n.$$
+<p>
+  Now sum over all pairs:
+</p>
+$$\sum_{n,m} |\lambda_{m,n}|
+\leq 2 \sum_m \sum_n W_m \cdot a_n^{(m)}
+\leq 2 \sum_m W_m \cdot \underbrace{\sum_n a_n^{(m)}}_{\leq\, 1}
+\leq 2 \sum_m W_m = 2.$$
+
+<div class="env env-remark">
+  <div class="env-label">Remark (where $\alpha \geq 0$ enters)</div>
+  <p>
+    At $\alpha = 0$, all clusters move at rate $1$, and the bound
+    $\sum_n a_n^{(m)} \leq 1$ gives uniform control. For $\alpha > 0$, larger
+    clusters move <em>slower</em>, which only tightens the flux bound. For
+    $\alpha < 0$, the movement rate $(2^m)^{|\alpha|}$ grows with $m$, and the
+    sum becomes $\sum_m W_m \cdot (2^m)^{|\alpha|}$, which can diverge even though
+    $\sum_m W_m = 1$. This is consistent with the existence of infinite components
+    in finite time for $-1 < \alpha < 0$.
+  </p>
+</div>
+
+<h2>Completing the proof</h2>
+
+<div class="env env-proposition">
+  <div class="env-label">Theorem (Berger, ~2025)</div>
+  <p>
+    For $\alpha \geq 0$, with shift-invariant initial conditions, there is no infinite
+    connected component in finite time almost surely.
+  </p>
+</div>
+
+<div class="env env-proof">
+  <div class="env-label">Proof.</div>
+  <p>
+    Fix a time horizon $T > 0$. Define the integrated flux
+    $\rho_{m,n} := \int_0^T |\lambda_{m,n}(t)|\, dt$. By the flux bound integrated
+    over $[0, T]$:
+  </p>
+  <p>
+    $$\sum_{n,m} \rho_{m,n} \leq 2T < \infty.$$
+  </p>
+  <p>
+    Since this double sum is finite, for any $\varepsilon > 0$ there exists $N_\varepsilon$
+    such that the total mass transferred to or from scales above $N_\varepsilon$ by time $T$
+    is at most $\varepsilon$. Therefore:
+  </p>
+  <p>
+    $$1 - \varepsilon < \sum_{m=0}^{N_\varepsilon} W_m(T) \leq 1.$$
+  </p>
+  <p>
+    Since this holds for every $\varepsilon > 0$:
+  </p>
+  <p>
+    $$\sum_{m=0}^{\infty} W_m(T) = 1 \qquad \text{for all } T > 0.$$
+  </p>
+  <p>
+    All mass remains in finite clusters for all time — no infinite connected component exists.
+  </p>
+  <div class="qed">$\square$</div>
+</div>
+
+<h2>Discussion</h2>
+
+<p>
+  The ODE system for the
+  $W_n$ involves an infinite sum of terms that are not sign-definite, so one cannot
+  directly interchange differentiation and summation (neither dominated convergence
+  nor monotone convergence applies). The flux bound sidesteps this entirely: instead
+  of controlling each $\dot{W}_n$ individually, it bounds the total <em>absolute</em>
+  rate of mass movement across all scales. The finiteness of this total flux is enough
+  to conclude that no mass escapes to infinity.
+</p>
+<p>
+  Translation invariance plays a structural role: the density
+  $v_k(t)$ is defined via the ergodic theorem, which requires spatial stationarity.
+  The normalization $\sum_m W_m = 1$
+  is what makes the flux bound close. Without stationarity, $\sum_m W_m$ could fluctuate
+  spatially, and the argument would need to be run on a finite torus with uniform-in-$L$
+  estimates.
+</p>
+<p>
+  The proof is sharp in the sense that it fails exactly where it should: at $\alpha < 0$,
+  the flux bound diverges because the movement rate $(2^m)^{|\alpha|}$ grows with scale,
+  and indeed infinite components <em>do</em> form in finite time for $-1 < \alpha < 0$.
+</p>
+<p>
+  For $\alpha > 0$, the flux bound is stronger than needed: the collision rates carry an
+  extra factor of $(2^m)^{-\alpha}$, which suggests one might extract moment bounds
+  $M_p(t) = \sum_k k^p v_k(t) < \infty$ for $\alpha$ large relative to $p$. However,
+  there is a fundamental obstruction: small clusters (singletons in particular) move at
+  rate $O(1)$ regardless of $\alpha$, so they can adjoin to large clusters at a constant
+  rate that no amount of large-cluster slowdown can suppress. The flux bound, which treats
+  all collisions uniformly, cannot distinguish this channel. Obtaining sharper growth bounds
+  therefore requires a different ingredient — specifically, the
+  <a href="gridlock.html" style="color:var(--accent)">gridlock mechanism</a>, which
+  guarantees that the supply of small particles near any given cluster is eventually exhausted.
+</p>
+
 <a href="index.html" class="back-link">← Back to simulation</a>
-</div></body></html>
+
+</div><!-- /container -->
+
+</body>
+</html>

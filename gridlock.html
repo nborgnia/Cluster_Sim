@@ -172,12 +172,16 @@
   controls to adjust $\alpha$ and re-run.
 </p>
 <p>
-  At <em>early times</em>, singletons merge rapidly into small clusters of mass $O(1)$.
-  By the <em>mid epoch</em>, these small clusters have frozen into a tessellation — they
-  tile the plane, caging any remaining mobile particles. At <em>late times</em>, only
-  the slow dynamics of the now-larger clusters are visible, and the process repeats at
-  the next scale. The <em>final</em> frame captures the system near completion, showing
-  the coarse tessellation after almost all merging has occurred.
+  Each frame shows a tessellation of interlocking clusters — the same qualitative structure
+  at every timescale. What changes between frames is the characteristic cluster size.
+  At <em>early times</em> the lattice is tiled by many small clusters; in each subsequent
+  frame, the tiles are fewer and larger. Crucially, the coarsening between frames is not
+  driven by a steady stream of small particles — by the <em>mid epoch</em>, essentially
+  no singletons remain. Instead, the clusters visible in one frame are themselves the
+  building blocks that merge to form the next frame's tessellation. The timescales between
+  frames grow geometrically (note the timestamps), reflecting the $m^{-\alpha}$ slowdown:
+  each generation of clusters must wait exponentially longer before the next round of
+  merging begins.
 </p>
 
 <div class="epoch-viewer">
@@ -253,35 +257,52 @@
 <div class="env env-proof">
   <div class="env-label">Proof.</div>
   <p>
-    We explore the boundary of $C_0$ in breadth-first order and couple the growth with a
-    branching process. The root is the origin. At each step, we process the next boundary
-    singleton $x$ adjacent to $C_0$ by flipping an independent $\operatorname{Ber}(1/4)$ coin:
+    Assign to each site $x \in \mathbb{Z}^2$ an independent random variable
+    $U_x \sim \operatorname{Unif}(\{N, S, E, W\})$, representing the direction $x$
+    will jump when its clock rings. We construct a branching process $\mathcal{T}$
+    that dominates $C_0$ as follows.
   </p>
   <p>
-    On <em>success</em> (probability $1/4$): $x$ joins $C_0$, and its at most $3$
-    non-$C_0$ neighbors are added to the exploration queue as children of $x$.
-    On <em>failure</em> (probability $3/4$): $x$ does not join $C_0$ and is a leaf.
+    Initialize $\mathcal{T}$ with the origin as its root and the origin's four neighbors
+    as <em>active</em>. Process active sites in any order. When processing site $x$,
+    which was added to the queue via a specific edge $e$ connecting $x$ to some site
+    already in $C_0$:
   </p>
   <p>
-    The coupling overestimates growth for two reasons.
-    First, each coin flip is an overestimate: in the true process, $x$ picks one of its $4$ neighbors
-    uniformly, so the probability it picks the direction toward $C_0$ is at most $1/4$.
-    Moreover, $x$ might be absorbed by a different cluster before its clock rings.
-    Second, if $C_0$ grows around a site so that it is adjacent from two directions,
-    the branching process gives it two independent chances to join (as a child in two branches),
-    while the true process gives it only one.
+    If $U_x$ points along $e$ (toward $C_0$): mark $x$ as <em>joined</em>. Add $x$'s
+    at most $3$ non-$C_0$ neighbors to the queue as children of $x$ in $\mathcal{T}$.
+    Otherwise: mark $x$ as <em>failed</em>. It is a leaf of $\mathcal{T}$.
   </p>
   <p>
-    Since each successful vertex contributes at most $3$ children, each succeeding
-    independently with probability $\leq 1/4$, the offspring distribution is dominated
-    by $\operatorname{Bin}(3, 1/4)$.
+    <em>Independence.</em> The event $\{U_x = e\}$ has probability exactly $1/4$ and is
+    independent of all information revealed by the exploration so far, since $U_x$ depends
+    only on $x$'s intrinsic randomness. This holds regardless of the shape of $C_0$ at the
+    time $x$ is processed.
+  </p>
+  <p>
+    <em>Domination.</em> Every site that joins $C_0$ in the true process also joins in
+    $\mathcal{T}$, because joining $C_0$ in the true process requires (at minimum) that
+    $U_x$ points toward $C_0$. The converse fails for two reasons: (a) the true process
+    also requires $x$'s clock to ring before $x$ is absorbed by another cluster, which
+    $\mathcal{T}$ ignores; and (b) if $x$ appears in the queue multiple times (via
+    different edges, because $C_0$ has grown around it), $\mathcal{T}$ gives it an
+    independent $1/4$ chance for each edge, while the true process gives it at most one
+    chance — and since the events $\{U_x = e_1\}$ and $\{U_x = e_2\}$ for distinct
+    edges $e_1, e_2$ are disjoint, the branching process overcounts.
+  </p>
+  <p>
+    Since each joined site produces at most $3$ children, each joining independently with
+    probability $1/4$, $\mathcal{T}$ is a Galton–Watson tree with offspring distribution
+    $\operatorname{Bin}(3, 1/4)$, and $|C_0| \leq |\mathcal{T}|$.
   </p>
   <div class="qed">$\square$</div>
 </div>
 
 <p>
   The offspring mean is $\mu = 3/4 < 1$, so the tree is subcritical.
-  Standard results (the Dwass–Kemperman formula) give
+  By the Dwass–Kemperman formula
+  (see Dwass, <a href="https://doi.org/10.1214/aoms/1177700167" style="color:var(--accent)"><em>The total progeny in a branching process</em></a>,
+  Ann. Math. Statist., 1969):
   $$\mathbb{P}(|C_0| \geq k) \leq C \cdot (3/4)^k \, k^{-3/2}$$
   and $\mathbb{E}[|C_0|] = 1/(1 - 3/4) = 4$. So in the frozen model at $M = 2$,
   the origin cluster is almost surely finite with exponentially decaying tails.
@@ -289,44 +310,33 @@
 
 <h2>Timescale separation and the multi-scale picture</h2>
 <p>
-  The power of the frozen model comes from iterating it across scales. Consider the
-  full (unfrozen) dynamics. We define <em>dyadic scales</em>: scale $n$ consists
-  of clusters with mass in $[2^{n-1}, 2^n)$.
+  The power of the frozen model comes from iterating it across scales.
+  Define <em>dyadic scales</em>: scale $n$ consists of clusters with mass in $[2^{n-1}, 2^n)$.
+  Scale-$n$ clusters move at rate $\sim 2^{-n\alpha}$, so the characteristic time for
+  scale-$n$ dynamics is $\tau_n \sim 2^{n\alpha}$. Successive timescales are separated by
+  a factor of $2^{\alpha}$: for large $\alpha$, each scale effectively completes before
+  the next begins.
 </p>
 <p>
-  At scale $n$, the relevant clusters move at rate $\sim (2^n)^{-\alpha} = 2^{-n\alpha}$.
-  The time needed for scale-$n$ dynamics to play out is $\sim 2^{n\alpha}$ (the inverse
-  of the rate). At scale $n+1$, the rate is $2^{-(n+1)\alpha}$, and the timescale is
-  $2^{(n+1)\alpha}$. The ratio between successive timescales is the constant $2^{\alpha}$:
-  scale-$(n+1)$ dynamics are slower than scale-$n$ dynamics by a factor of $2^{\alpha}$.
-  For large $\alpha$ this factor is large, providing clean separation; for moderate $\alpha$
-  the scales begin to overlap.
-</p>
-<p>
-  This <em>separation of scales</em> means that, to a good approximation, each scale
-  completes its dynamics before the next one begins. At scale $1$, singletons merge
-  into clusters of mass $\sim 2$. These then freeze (on the scale-$1$ timescale) and
-  tile the plane. At scale $2$, the mass-$2$ clusters begin to merge — but now they
-  behave like "super-singletons" on a coarsened lattice. The process repeats.
+  The resulting picture is self-similar. At scale $1$, singletons merge into small clusters
+  that tile the plane. On the scale-$1$ timescale, these clusters are effectively frozen —
+  they form a tessellation that cages any remaining mobile particles. Growth resumes only
+  at scale $2$, when the small clusters themselves become mobile and merge, behaving like
+  "super-singletons" on a coarsened lattice. The process repeats at each subsequent scale.
 </p>
 
 <div class="env env-remark">
   <div class="env-label">Remark (imperfect separation)</div>
   <p>
-    The timescale separation is not exact. During the scale-$n$ window (duration
-    $\sim 2^{n\alpha}$), each scale-$(n+1)$ cluster fires at rate $2^{-(n+1)\alpha}$,
-    so the probability of a premature scale-$(n+1)$ merger is
-    $\sim 2^{n\alpha} \cdot 2^{-(n+1)\alpha} = 2^{-\alpha}$ — a constant
-    independent of $n$. Each such premature merger enlarges the origin cluster
-    and exposes new boundary at scale $n$, spawning fresh branches of the
-    scale-$n$ branching process. Crucially, this $2^{-\alpha}$ leakage does not
-    decay with scale, so the natural formalization as a multitype Galton–Watson
-    process (with type = scale, and $2^{-\alpha}$ probability of producing a
-    child one scale up) is not obviously subcritical — in fact, the constant
-    immigration rate across scales causes the joint process to survive.
-    This is a genuine obstruction, not merely a technicality, and it means the
-    clean hierarchical picture requires additional input (such as the $O(1)$-neighbor
-    property below) to be made rigorous even for large $\alpha$.
+    The separation is not exact. During the scale-$n$ window (duration $\sim 2^{n\alpha}$),
+    each scale-$(n+1)$ cluster fires at rate $2^{-(n+1)\alpha}$, so the probability of a
+    premature merger from the next scale is $2^{-\alpha}$ — a constant independent of $n$.
+    Each such merger enlarges the origin cluster and exposes new boundary, spawning fresh
+    branches of the scale-$n$ branching process. Since this $2^{-\alpha}$ leakage does not
+    decay with $n$, the natural formalization as a multitype Galton–Watson process is not
+    obviously subcritical. This is a genuine obstruction: the clean hierarchical picture
+    requires additional geometric input (such as the $O(1)$-neighbor property below) even
+    for large $\alpha$.
   </p>
 </div>
 
@@ -338,17 +348,16 @@
   lattice to have $O(1)$ neighbors.
 </p>
 <p>
-  At scale $n$, each "child" in the branching process corresponds to a neighboring
-  cluster of mass $\sim 2^n$ merging into the origin cluster. So each child
-  contributes mass $\sim 2^n$, and the total mass gained at scale $n$ is
-  $T_n \cdot 2^n$, where $T_n$ is the total progeny of the scale-$n$ branching process.
+  At scale $n$, each "child" in the branching process contributes mass $\sim 2^n$, and
+  the total mass gained at scale $n$ is $T_n \cdot 2^n$, where $T_n$ is the total progeny
+  of the scale-$n$ branching process.
 </p>
 <p>
-  If the origin cluster has $O(1)$ neighbors at scale $n$ — that is, the coarsened
-  tessellation looks locally like $\mathbb{Z}^2$ — then the branching process at
-  scale $n$ has $O(1)$ roots, each with offspring $\operatorname{Bin}(3, 1/4)$.
-  The expected progeny is $O(1)$, so the mass gained at scale $n$ is $O(2^n)$.
-  Summing: total mass after $n$ scales is $\sum_{j=0}^n O(2^j) = O(2^n)$.
+  If the degree of the coarsened tessellation is bounded uniformly in $n$ — with tails
+  that do not worsen as $n$ grows — then the same GW tree dominates at every scale.
+  The expected progeny $\mathbb{E}[T_n] = O(1)$ is a scale-independent constant,
+  so the mass gained at scale $n$ is $O(2^n)$ and the total mass after $n$ scales
+  is $\sum_{j=0}^n O(2^j) = O(2^n)$.
 </p>
 <p>
   Combining with the timescale: the time to complete $n$ scales is
@@ -360,15 +369,16 @@ $$|C_0(t)| \lesssim 2^n = (2^{n\alpha})^{1/\alpha} \sim t^{1/\alpha}.$$
 <div class="env env-remark">
   <div class="env-label">Remark (the gap — worst-case without $O(1)$ neighbors)</div>
   <p>
-    Without the $O(1)$-neighbor property, we must use the worst-case bound: the
-    origin cluster's boundary at scale $n$ is $O(|C_0^{(n-1)}|)$, the mass
-    inherited from all previous scales. Each of these boundary neighbors initiates
-    a branching process whose children each contribute mass $\sim 2^n$.
-    This creates multiplicative feedback: $|C_0^{(n)}| \sim |C_0^{(n-1)}| \cdot 2^n$.
-    Iterating from scale $0$:
-    $$|C_0^{(n)}| \sim \prod_{k=0}^n 2^k = 2^{n(n+1)/2} = 2^{\Theta(n^2)}.$$
+    Without the $O(1)$-neighbor property, we must use worst-case estimates at each scale:
+    a cluster of size $\sim 2^n$ may have up to $O(2^n)$ neighbors (if maximally ramified),
+    so the relevant GW tree has offspring $\operatorname{Bin}(2^n - 1, 2^{-n})$ — with
+    expected progeny $\mathbb{E}[T_n] \sim 2^n$. Moreover, the origin cluster inherits
+    $O(|C_0^{(n-1)}|)$ boundary neighbors from previous scales, each serving as a root
+    of this GW tree. This creates multiplicative feedback:
+    $|C_0^{(n)}| \sim |C_0^{(n-1)}| \cdot 2^n \cdot 2^n$. Iterating from scale $0$:
+    $$|C_0^{(n)}| \sim \prod_{k=0}^n 2^{2k} = 2^{n(n+1)} = 2^{\Theta(n^2)}.$$
     Since $t \sim 2^{n\alpha}$ gives $n \sim \frac{\log t}{\alpha}$, this yields
-    $|C_0(t)| \lesssim 2^{\Theta((\log t)^2 / \alpha^2)}$ — subexponential in $t$,
+    $|C_0(t)| \lesssim 2^{\Theta((\log t)^2 / \alpha^2)}$ — sub-exponential in $t$
     but far from the conjectured $t^{1/\alpha}$.
   </p>
   <p>
@@ -396,15 +406,18 @@ $$|C_0(t)| \lesssim 2^n = (2^{n\alpha})^{1/\alpha} \sim t^{1/\alpha}.$$
   separation becomes <em>doubly exponential</em>: the time to reach scale $n$ is
   $\sum_{j=0}^n 2^{\alpha \cdot 2^j} \sim 2^{\alpha \cdot 2^n}$.
   Setting $t \sim 2^{\alpha \cdot 2^n}$ gives $n \sim \log_2(\log_2 t / \alpha)$,
-  so
+  so the same heuristic would yield:
 </p>
 $$|C_0(t)| \lesssim 2^n \sim \frac{1}{\alpha}\log_2 t.$$
 <p>
   This ultra-slow logarithmic growth reflects the extreme gridlock in the exponential
-  regime: every additional doubling of cluster mass requires an exponentially longer
-  wait, and the rigorous analysis (presented on the
-  <a href="exponential.html" style="color:var(--accent)">exponential regime page</a>)
-  yields a subexponential upper bound via worst-case neighbor estimates.
+  regime. Because the timescale separation grows with $n$ (it is doubly exponential
+  rather than a fixed factor of $2^{\alpha}$), the inter-scale leakage decays fast
+  enough to yield rigorous upper bounds on cluster size despite the geometric bottleneck.
+  Even with the worst-case neighbor count $O(2^n)$, the doubly exponential separation
+  gives a subpolynomial bound of $2^{O((\log \log t)^2)}$ — though this still falls
+  short of the conjectured $O(\log t)$. The full analysis is presented on the
+  <a href="exponential.html" style="color:var(--accent)">exponential regime page</a>.
 </p>
 
 <h2>Summary of results and status</h2>
@@ -485,10 +498,9 @@ $$|C_0(t)| \lesssim 2^n \sim \frac{1}{\alpha}\log_2 t.$$
 
   // === DRAWING ===
   function idToColor(id){
-    // Golden angle hue assignment: maximally separates neighboring IDs
     const hue = (id * 137.508) % 360;
-    const sat = 55 + (id * 73 % 30);   // 55-85%
-    const lit = 38 + (id * 53 % 24);   // 38-62%
+    const sat = 55 + (id * 73 % 30);
+    const lit = 38 + (id * 53 % 24);
     return `hsl(${hue},${sat}%,${lit}%)`;
   }
 
@@ -497,7 +509,6 @@ $$|C_0(t)| \lesssim 2^n \sim \frac{1}{\alpha}\log_2 t.$$
     const S=2*st.L+1, cs=Math.max(Math.floor(canvas.width/S),1), W=S*cs;
     canvas.width=W; canvas.height=W;
     ctx.fillStyle="#0a0a12"; ctx.fillRect(0,0,W,W);
-    // Pre-compute color per cluster
     const colorCache=new Map();
     for(const [cid] of st.clusters){
       colorCache.set(cid, idToColor(cid));
@@ -533,8 +544,6 @@ $$|C_0(t)| \lesssim 2^n \sim \frac{1}{\alpha}\log_2 t.$$
   ];
   const descEl = document.getElementById("ep-desc");
 
-  // Epoch thresholds: fraction of clusters remaining
-  // Early: ~70% gone, Mid: ~90% gone, Late: ~98% gone, Final: ~99.5% gone
   const EPOCH_FRACS = [0.3, 0.10, 0.02, 0.005];
   const EPOCH_NAMES = ["Early", "Mid", "Late", "Final"];
 
@@ -561,9 +570,6 @@ $$|C_0(t)| \lesssim 2^n \sim \frac{1}{\alpha}\log_2 t.$$
       steps: epState.steps,
       avgSize: avgClusterSize(epState)
     };
-    labels[idx].textContent = `${EPOCH_NAMES[idx]} · t=${sciNot(epState.time)}`;
-    labels[idx].innerHTML = labels[idx].textContent;
-    // Re-render with innerHTML to handle <sup> tags
     labels[idx].innerHTML = `${EPOCH_NAMES[idx]} · t=${sciNot(epState.time)}`;
   }
 
@@ -593,14 +599,12 @@ $$|C_0(t)| \lesssim 2^n \sim \frac{1}{\alpha}\log_2 t.$$
     document.getElementById("ep-run").className="btn-run";
   }
 
-  // Determine how many steps per frame based on current state
   function epStepsPerFrame(){
     if(!epState) return 10;
     const nCl=epState.clusters.size;
     const S=2*epState.L+1;
     const nPart=Math.round(S*S*epP);
     const frac=nCl/Math.max(nPart,1);
-    // We want the whole run to take ~10-15 seconds
     const base = Math.max(1, Math.round(nPart * 0.3 / (15*60)));
     const alphaFactor = 1 + Math.max(epAlpha, 0.1);
     let spf = Math.round(base * alphaFactor);
@@ -615,7 +619,6 @@ $$|C_0(t)| \lesssim 2^n \sim \frac{1}{\alpha}\log_2 t.$$
   let nextEpoch = 0;
   function epTick(){
     if(!epRunning || !epState || epState.clusters.size<=1){
-      // Capture any remaining snapshots
       while(nextEpoch < N_EPOCHS){
         captureSnapshot(nextEpoch);
         nextEpoch++;
@@ -629,7 +632,6 @@ $$|C_0(t)| \lesssim 2^n \sim \frac{1}{\alpha}\log_2 t.$$
     const nPart=Math.round(S*S*epP);
     for(let i=0;i<n && epState.clusters.size>1;i++){
       step(epState);
-      // Check epoch thresholds
       if(nextEpoch < N_EPOCHS){
         const frac = epState.clusters.size / Math.max(nPart,1);
         if(frac <= EPOCH_FRACS[nextEpoch]){
@@ -638,7 +640,6 @@ $$|C_0(t)| \lesssim 2^n \sim \frac{1}{\alpha}\log_2 t.$$
         }
       }
     }
-    // Update description
     const frac = (epState.clusters.size / Math.max(nPart,1) * 100).toFixed(1);
     const avg = avgClusterSize(epState).toFixed(1);
     descEl.innerHTML = `t = <span class="val">${sciNot(epState.time)}</span> · ` +
@@ -654,7 +655,6 @@ $$|C_0(t)| \lesssim 2^n \sim \frac{1}{\alpha}\log_2 t.$$
     if(!epState || epState.clusters.size<=1) epInit();
     epRunning=true;
     nextEpoch = 0;
-    // Reset snapshots if restarting
     if(snapshotMeta[0].time !== undefined){
       epInit();
       epRunning=true;
@@ -667,7 +667,6 @@ $$|C_0(t)| \lesssim 2^n \sim \frac{1}{\alpha}\log_2 t.$$
 
   document.getElementById("ep-reset").addEventListener("click", epInit);
 
-  // Alpha pills
   function setEpAlpha(a, id){
     epAlpha=a;
     ["ep-a2","ep-a3","ep-a4","ep-a5"].forEach(x=>document.getElementById(x).classList.remove("active"));
@@ -679,7 +678,6 @@ $$|C_0(t)| \lesssim 2^n \sim \frac{1}{\alpha}\log_2 t.$$
   document.getElementById("ep-a4").addEventListener("click", ()=>setEpAlpha(4,"ep-a4"));
   document.getElementById("ep-a5").addEventListener("click", ()=>setEpAlpha(5,"ep-a5"));
 
-  // Density pills
   function setEpP(p, id){
     epP=p;
     ["ep-p025","ep-p05","ep-p1"].forEach(x=>document.getElementById(x).classList.remove("active"));
@@ -690,11 +688,9 @@ $$|C_0(t)| \lesssim 2^n \sim \frac{1}{\alpha}\log_2 t.$$
   document.getElementById("ep-p05").addEventListener("click", ()=>setEpP(0.5,"ep-p05"));
   document.getElementById("ep-p1").addEventListener("click", ()=>setEpP(1.0,"ep-p1"));
 
-  // Click to enlarge frame
   for(let i=0;i<N_EPOCHS;i++){
     canvases[i].addEventListener("click", ()=>{
       if(!snapshotMeta[i].time) return;
-      // Toggle selection
       if(selectedFrame === i){
         selectedFrame = -1;
         canvases[i].classList.remove("selected");
